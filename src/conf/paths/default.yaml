@@ -1,0 +1,6 @@
+data_dir: ${oc.env:DATA_ROOT}
+scratch_data_dir: /scratch #${oc.env:SCRATCH_ROOT}
+experiment_path: ${paths.data_dir}/${meta.data_name}/${meta.experiment_name}
+ckpt_dir: ${paths.experiment_path}/ckpts/
+embed_dir: ${paths.experiment_path}/embeddings/
+sample_dir: ${paths.experiment_path}/samples/

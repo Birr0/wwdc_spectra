@@ -1,0 +1,13 @@
+defaults:
+  - default
+
+accelerator: gpu
+#strategy: ddp
+devices: 4 # can i set this automatically?
+num_nodes: 1
+
+min_epochs: 1
+max_epochs: 5
+
+
+deterministic: warn  #- true/or no setting breaks for flows due to non-implemented deterministic operations.

@@ -1,0 +1,15 @@
+# https://wandb.ai
+
+wandb:
+  _target_: lightning.pytorch.loggers.wandb.WandbLogger
+  anonymous: null # enable anonymous logging
+  project: ${oc.env:WANDB_PROJECT}
+  entity: ${oc.env:WANDB_ENTITY} #= set to name of your wandb team
+  group: ${meta.experiment_name}
+  id:  ${hydra:job.id}
+  tags: ["${hydra:job.id}", "${meta.experiment_name}", "${meta.data_name}"]
+  mode: online
+  name: ${hydra:job.id}_${meta.experiment_name}
+  save_dir: ${paths.experiment_path}/wandb/
+  reinit: True
+  log_model: True

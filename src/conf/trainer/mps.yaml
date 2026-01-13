@@ -1,0 +1,13 @@
+defaults:
+  - default
+
+accelerator: mps
+devices: 1
+
+min_epochs: 1
+max_epochs: 10
+
+limit_train_batches: 1
+limit_test_batches: 1
+
+deterministic: true

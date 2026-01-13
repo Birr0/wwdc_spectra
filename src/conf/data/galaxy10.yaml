@@ -1,0 +1,137 @@
+x_ds:
+  dataset_name: "galaxy10"
+  fp: ${meta.data_path}
+  type: "image"
+  augmentations: ${..augmentations}
+  size: [3, 256, 256]
+
+y_catalog:
+  catalog_name: "galaxy10"
+  fp: null
+  join_method: "concat"
+  variables:
+    disturbed:
+      name: "disturbed"
+      size: 1
+      processing_fn: null
+    merging:
+      name: "merging"
+      size: 1
+      processing_fn: null
+    round_smooth:
+      name: "round_smooth"
+      size: 1
+      processing_fn: null
+    in_between_round_smooth:
+      name: "in_between_round_smooth"
+      size: 1
+      processing_fn: null
+    barred_spiral:
+      name: "barred_spiral"
+      size: 1
+      processing_fn: null
+    barred_tight_spiral:
+      name: "barred_tight_spiral"
+      size: 1
+      processing_fn: null
+    unbarred_tight_spiral:
+      name: "unbarred_tight_spiral"
+      size: 1
+      processing_fn: null
+    unbarred_loose_spiral:
+      name: "unbarred_loose_spiral"
+      size: 1
+      processing_fn: null
+    edge_on_without_bulge:
+      name: "edge_on_without_bulge"
+      size: 1
+      processing_fn: null
+    edge_on_with_bulge:
+      name: "edge_on_with_bulge"
+      size: 1
+      processing_fn: null
+  drop_variables: []
+
+augmentations:
+  _target_: wwdc.data.augmentations.Augmentation
+  affine:
+    angle:
+      sampler: null
+        #_target_: torch.distributions.Uniform #wwdc.data.augmentations.Choice
+        #low: -180
+        #high: 180
+      value: 0
+    translate:
+      sampler: null
+        #_target_: torch.distributions.Uniform
+        #low: -4
+        #high: 4
+      value: [0, 0]
+    scale:
+      sampler: null
+        #_target_: torch.distributions.Uniform
+        #low: 0.77
+        #high: 1.30
+      value: 1
+    shear:
+      sampler: null
+      value: [0, 0]
+
+train_dataset:
+  _target_: wwdc.data.galaxy10_decals.Galaxy10
+  split: "train"
+  x_ds: ${..x_ds}
+  y_catalog: ${..y_catalog}
+
+val_dataset:
+  _target_: wwdc.data.galaxy10_decals.Galaxy10
+  split: "val"
+  x_ds: ${..x_ds}
+  y_catalog: ${..y_catalog}
+
+test_dataset:
+  _target_: wwdc.data.galaxy10_decals.Galaxy10
+  split: "test"
+  x_ds: ${..x_ds}
+  y_catalog: ${..y_catalog}
+
+loader:
+  _target_: wwdc.data.modules.WWDCDataLoader
+  datasets:
+    train:
+      _target_: wwdc.data.modules.WWDCDataset
+      dataset: ${....train_dataset}
+      return_catalog: true
+    val:
+      _target_: wwdc.data.modules.WWDCDataset
+      dataset: ${....val_dataset}
+      return_catalog: true
+    test:
+      _target_: wwdc.data.modules.WWDCDataset
+      dataset: ${....test_dataset}
+      return_catalog: true
+  batch_size: 16
+  random_state: ${seed}
+  shuffle: true
+  num_workers: null # dynamically set in the python file
+
+embedding_loader:
+  _target_: wwdc.data.embeddings.WWDCEmbeddingDataLoader
+  datasets:
+    train:
+      _target_: wwdc.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/train
+      y_catalog: ${....y_catalog}
+    val:
+      _target_: wwdc.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/val
+      y_catalog: ${....y_catalog}
+    test:
+      _target_: wwdc.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/test
+      y_catalog: ${....y_catalog}
+  batch_size: 16 #64
+  val_split: 0.2
+  random_state: ${seed}
+  shuffle: true
+  num_workers: 0 #null  #0 # dynamically set in the python file

@@ -1,0 +1,5 @@
+csv:
+  _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
+  prefix: ""
+  name: ${hydra:job.id}
+  save_dir: ${paths.experiment_path}/metrics/

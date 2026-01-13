@@ -1,0 +1,112 @@
+x_ds:
+  dataset_name: "rgbmnist"
+  fp: ${meta.data_path} #${meta.scratch_data_path}
+  type: "image"
+  augmentations: ${..augmentations}
+  size: [3, 28, 28]
+
+y_catalog:
+  catalog_name: "rgbmnist"
+  fp: null
+  join_method: "concat"
+  variables:
+    r:
+      name: "r"
+      size: 1
+      processing_fn: null
+    g:
+      name: "g"
+      size: 1
+      processing_fn: null
+    b:
+      name: "b"
+      size: 1
+      processing_fn: null
+    digit:
+      name: "digit"
+      size: 10
+      processing_fn:
+        _target_: torch.nn.functional.one_hot
+        _partial_: true
+        num_classes: 10
+  drop_variables: ["b"]
+
+augmentations:
+  _target_: wwdc.data.augmentations.ImageAugmentation
+  affine:
+    angle:
+      sampler:
+        _target_: torch.distributions.Normal #wwdc.data.augmentations.Choice
+        loc: 0
+        scale: 10
+      value: 0
+    translate:
+      sampler: null
+      value: [0, 0]
+    scale:
+      sampler:
+        _target_: torch.distributions.Normal
+        loc: 1
+        scale: 0.1
+      value: 1
+    shear:
+      sampler: null
+      value: [0, 0]
+  random_colouring:
+    _target_: torch.distributions.Uniform
+    low: 0.05
+    high: 0.95
+  image_size: [28, 28]
+
+train_dataset:
+  _target_: wwdc.data.rgbmnist.RGBMNIST
+  train: true
+  x_ds: ${..x_ds}
+  y_catalog: ${..y_catalog}
+
+test_dataset:
+  _target_: wwdc.data.rgbmnist.RGBMNIST
+  train: false
+  x_ds: ${..x_ds}
+  y_catalog: ${..y_catalog}
+
+loader:
+  _target_: wwdc.data.modules.WWDCDataLoader
+  datasets:
+    train:
+      _target_: wwdc.data.modules.WWDCDataset
+      dataset: ${....train_dataset}
+      return_catalog: true # this would be better being false.
+    test:
+      _target_: wwdc.data.modules.WWDCDataset
+      dataset: ${....test_dataset}
+      return_catalog: true
+
+  batch_size: 256
+  val_split: 0.2
+  random_state: ${seed}
+  shuffle: true
+  num_workers: null # dynamically set in the python file
+
+model_id: null  ## populate in code
+
+embedding_loader:
+  _target_: wwdc.data.embeddings.WWDCEmbeddingDataLoader
+  datasets:
+    train:
+      _target_: wwdc.data.embeddings.WWDCEmbeddingDataset
+      embedding_dir: ${paths.embedding_dir}/train
+      y_catalog: ${....y_catalog}
+    val:
+      _target_: wwdc.data.embeddings.WWDCEmbeddingDataset
+      embedding_dir: ${paths.embedding_dir}/val
+      y_catalog: ${....y_catalog}
+    test:
+      _target_: wwdc.data.embeddings.WWDCEmbeddingDataset
+      embedding_dir: ${paths.embedding_dir}/test
+      y_catalog: ${....y_catalog}
+  batch_size: 64
+  val_split: 0.2
+  random_state: ${seed}
+  shuffle: true
+  num_workers: null # dynamically set in the python file
