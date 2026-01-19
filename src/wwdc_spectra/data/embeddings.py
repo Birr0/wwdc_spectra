@@ -85,8 +85,4 @@ if __name__ == "__main__":
         galaxy10_decals/galaxy10_VAE/embeddings/5287281/test",
         y_catalog=None,
     )
-
     print(test_dataset[0])
-    """loader = WWDCEmbeddingDataLoader(
-        datasets={"train": train_dataset, "val": val_dataset, "test": test_dataset}
-    )

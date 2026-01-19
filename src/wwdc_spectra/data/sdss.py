@@ -131,9 +131,7 @@ class SDSS(Dataset):
             torch.tensor(wavelengths)
         ) #np.log10(obj["spectrum"]["lambda"])
         flux = torch.tensor(flux, dtype=torch.float32)  #np.array(obj["spectrum"]["flux"])
-
-        flux_nan = flux.isnan()
-
+        #flux_nan = flux.isnan()
         ivar = torch.tensor(ivar, dtype=torch.float32) #np.array(obj["spectrum"]["ivar"])
 
         # apply bitmask, remove small values
@@ -164,8 +162,10 @@ class SDSS(Dataset):
         wave_rest = self._wave_obs / (1 + z)
         # flatish region that is well observed out to z ~ 0.5
         sel = (w > 0) & (wave_rest > 5300) & (wave_rest < 5850)
-        if sel.count_nonzero() == 0: norm = torch.tensor(0)
-        else: norm = torch.median(spec[sel])
+        if sel.count_nonzero() == 0: 
+            norm = torch.tensor(0)
+        else: 
+            norm = torch.median(spec[sel])
         # remove spectra (from training) for which no valid norm could be found
         if not torch.isfinite(norm):
             norm = 0

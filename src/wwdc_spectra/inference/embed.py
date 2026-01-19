@@ -1,18 +1,16 @@
 import logging
-import os
 from pathlib import Path
 
 import hydra
-from datasets import Dataset, Features, Sequence, Value
 from hydra.core.global_hydra import GlobalHydra
 from lightning.pytorch import seed_everything
 import pyarrow as pa
 import pyarrow.parquet as pq
 
 from wwdc_spectra.inference.modules import (
-    create_lightning_loader,
-    wandb_format
+    create_lightning_loader
 )
+# wandb_format
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +90,7 @@ def main(cfg):
                 cfg.logger.wandb.tags.append(str(model_id))
                 cfg.logger.wandb.id = model_id
                 cfg.logger.wandb.name = f"{model_id}_{cfg.meta.experiment_name}"
-                wandb_logger = hydra.utils.instantiate(cfg.logger.wandb)
+                #wandb_logger = hydra.utils.instantiate(cfg.logger.wandb)
                 msg = "Wandb logger instantiated."
                 log.info(msg)
 
@@ -101,6 +99,8 @@ def main(cfg):
                 log.error(msg)
                 raise e
             
+            '''
+            #Don't include wandb logging
             try:
                 print(f"wandb_logger: {wandb_logger}")
                 print(
@@ -119,6 +119,7 @@ def main(cfg):
                 msg = f"Error logging embeddings to wandb: {e}"
                 log.error(msg)
                 raise e
+            '''
 
     log.info("Inference complete.")
     return

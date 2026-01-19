@@ -1,8 +1,6 @@
 import os
 
 import torch
-import torch.nn as nn
-from huggingface_hub import login
 from dotenv import load_dotenv
 from flow import VelocityField
 

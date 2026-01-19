@@ -16,6 +16,7 @@ class PretrainedAIONSpectra(nn.Module):
             codec_class=CODEC_CLASS,
             modality_type=MODALITY_TYPE, #MODALITY_CODEC_MAPPING.aion.modalities.SDSSSpectrum,
         )
+        self.reduction = reduction
 
         self.model.eval()
         for p in self.model.parameters():
@@ -24,7 +25,7 @@ class PretrainedAIONSpectra(nn.Module):
     @torch.no_grad()
     def encode(self, X):
         code = self.model.encoder.forward(X)
-        if reduction == "mean_pool":
+        if self.reduction == "mean_pool":
             return code.mean(dim=-1)
         else:
             msg = "Only Mean Pool (reduction='mean_pool') has been implemented."

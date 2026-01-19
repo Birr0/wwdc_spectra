@@ -1,5 +1,4 @@
 import copy
-import os
 
 import lightning as L
 import torch
@@ -42,7 +41,7 @@ class WWDCDataset(Dataset):
             if len(cat_entry) > 0:
                 return torch.cat(list(cat_entry.values()), dim=0)
             return torch.tensor([])
-        elif self.y_catalog["join_method"] == None:
+        elif self.y_catalog["join_method"] is None:
             return cat_entry
         msg = f"Invalid join_method: {self.y_catalog['join_method']}"
         raise ValueError(msg)
