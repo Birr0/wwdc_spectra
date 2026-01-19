@@ -10,6 +10,9 @@ login()
 DATA_ROOT = os.getenv(
     "DATA_ROOT"
 )
+HF_USERNAME = os.getenv(
+    "HF_USERNAME"
+)
 
 DATA_NAME = "sdss_II"
 EXPERIMENT_NAME = "spender_I_flow"
@@ -27,7 +30,7 @@ for i, embed_dir in enumerate(embedding_dirs):
     ds_dict = load_dataset("parquet", data_files=data_files)
 
     ds_dict.push_to_hub(
-        f"Birr0/spender-I-vf-{i}",
+        f"{HF_USERNAME}/spender-I-vf-{i}",
         private=False,          # optional
     )
     print(embed_dir)
