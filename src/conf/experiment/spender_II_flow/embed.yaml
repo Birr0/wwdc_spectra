@@ -1,0 +1,34 @@
+# @package _global_
+defaults:
+  - /data/sdss_II
+  - /trainer/gpu
+  - /logger/wandb
+  - /paths/default
+  - /hydra/default
+  - model #/model
+  - sweeps
+  - train
+  - meta
+  - _self_
+
+lightning_loader:
+  ckpt_path: null # let the code populate this.
+
+splits:
+  - train
+  - val
+  - test
+
+paths:
+  embed_dir: ${paths.experiment_path}/embeddings/
+batch_limit: 20 #null
+
+logger:
+  wandb:
+    mode: offline
+
+hydra:
+  sweeper:
+    params:
+      ++data.y_catalog.drop_variables: ${....sweeps.drop_variables.0} #${....sweeps.drop_variables.0}, ${....sweeps.drop_variables.1} #, ${....sweeps.drop_variables.2}, ${....sweeps.drop_variables.3}, ${....sweeps.drop_variables.4}, ${....sweeps.drop_variables.5}, ${....sweeps.drop_variables.6}, ${....sweeps.drop_variables.7}, ${....sweeps.drop_variables.8} #, ${....sweeps.drop_variables.9}, ${....sweeps.drop_variables.10}, ${....sweeps.drop_variables.11}, ${....sweeps.drop_variables.12}, ${....sweeps.drop_variables.13}, ${....sweeps.drop_variables.14}
+      +seed: ${....sweeps.seeds.0} #, ${....sweeps.seeds.1}, ${....sweeps.seeds.2}

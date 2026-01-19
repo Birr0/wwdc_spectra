@@ -1,0 +1,44 @@
+# @package _global_
+defaults:
+  - /data/sdss
+  - /trainer/gpu
+  - /logger/wandb
+  - /paths/default
+  - /hydra/default
+  - model 
+  - sweeps
+  - train
+  - meta
+  - _self_
+
+lightning_loader:
+  ckpt_path: null # let the code populate this.
+
+splits:
+  - test
+  # - train
+  # - val
+
+embed_opt:
+  - "orig"
+  - "cond"
+  - "uncond"
+
+paths:
+  embed_dir: ${paths.experiment_path}/embeddings/
+batch_limit: null
+
+logger:
+  wandb:
+    mode: offline
+
+hydra:
+  sweeper:
+    params:
+      ++data.y_catalog.drop_variables: ${....sweeps.drop_variables.0} #${....sweeps.drop_variables.0}, ${....sweeps.drop_variables.1} #, ${....sweeps.drop_variables.2}, ${....sweeps.drop_variables.3}, ${....sweeps.drop_variables.4}, ${....sweeps.drop_variables.5}, ${....sweeps.drop_variables.6}, ${....sweeps.drop_variables.7}, ${....sweeps.drop_variables.8} #, ${....sweeps.drop_variables.9}, ${....sweeps.drop_variables.10}, ${....sweeps.drop_variables.11}, ${....sweeps.drop_variables.12}, ${....sweeps.drop_variables.13}, ${....sweeps.drop_variables.14}
+      +seed: ${....sweeps.seeds.0}, ${....sweeps.seeds.1}, ${....sweeps.seeds.2}
+      +data.loader.datasets.train.return_id: True
+      +data.loader.datasets.val.return_id: True
+      +data.loader.datasets.test.return_id: True
+      +lightning_loader.n_steps: 20
+      

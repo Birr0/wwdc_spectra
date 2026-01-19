@@ -1,0 +1,26 @@
+# @package _global_
+
+defaults:
+- /data/sdss
+- /trainer/gpu
+- /logger/wandb
+- /logger/csv
+- /paths/default
+- /hydra/default
+- model
+- sweeps
+- meta
+- _self_
+
+hydra:
+  sweeper:
+    params:
+      ++data.y_catalog.drop_variables: ${....sweeps.drop_variables.0} 
+      +seed: ${....sweeps.seeds.0}, ${....sweeps.seeds.1}, ${....sweeps.seeds.2}
+
+trainer:
+  max_epochs: 50
+  #limit_train_batches: 5
+  #limit_val_batches: 1
+  #limit_test_batches: 1
+  log_every_n_steps: 50

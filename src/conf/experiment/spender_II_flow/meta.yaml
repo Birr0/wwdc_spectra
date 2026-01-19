@@ -1,0 +1,12 @@
+meta:
+  authors:
+  - BR
+  data_id: 3
+  data_name: sdss_II
+  description: Conditioninal flow matching on SDSS Spender Latent Space. Redshift is used in the conditional flow.
+  experiment_id: 5
+  experiment_name: spender_II_flow
+  experiment_path: ${paths.data_dir}/${meta.data_name}/${meta.experiment_name}/
+  version: 1.0
+  data_path: ${paths.data_dir}/${meta.data_name}
+  scratch_data_path: ${paths.scratch_data_dir}/${meta.data_name}/${hydra:job.id}
