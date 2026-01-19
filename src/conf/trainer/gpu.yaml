@@ -13,3 +13,5 @@ deterministic: warn  #- true/or no setting breaks for flows due to non-implement
 
 gradient_clip_val: 1.0
 gradient_clip_algorithm: norm
+
+#precision: 32
