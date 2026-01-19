@@ -1,0 +1,61 @@
+x_ds:
+  dataset_name: "sdss"
+  fp: ${meta.data_path}
+  type: "spectra"
+  augmentations: none #${..augmentations}
+  size: 3921
+
+y_catalog:
+  catalog_name: "sdss"
+  fp: null
+  join_method: null
+  variables:
+    Z:
+      name: "redshift"
+      size: 1
+      processing_fn: null
+  drop_variables: []
+
+loader:
+  _target_: wwdc_spectra.data.modules.WWDCDataLoader
+  datasets:
+    train:
+      _target_: wwdc_spectra.data.sdss.SDSS
+      split: "train"
+      x_ds: ${....x_ds}
+      y_catalog: ${....y_catalog}
+    val:
+      _target_: wwdc_spectra.data.sdss.SDSS
+      split: "val"
+      x_ds: ${....x_ds}
+      y_catalog: ${....y_catalog}
+    test:
+      _target_: wwdc_spectra.data.sdss.SDSS
+      split: "test"
+      x_ds: ${....x_ds}
+      y_catalog: ${....y_catalog}
+  batch_size: 512
+  random_state: ${seed}
+  shuffle: true
+  num_workers: 24 #0 # dynamically set in the python file
+
+embedding_loader: # need to update this.
+  _target_: wwdc_spectra.data.embeddings.WWDCEmbeddingDataLoader
+  datasets:
+    train:
+      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/train
+      y_catalog: ${....y_catalog}
+    val:
+      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/val
+      y_catalog: ${....y_catalog}
+    test:
+      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
+      embedding_dir: ${paths.embed_fp}/test
+      y_catalog: ${....y_catalog}
+  batch_size: 16 #64
+  val_split: 0.2
+  random_state: ${seed}
+  shuffle: true
+  num_workers: 24 #null  #0 # dynamically set in the python file
