@@ -1,43 +1,44 @@
 # Need to make a torch model wrapper for spender
 import torch
 import torch.nn as nn
-import lightning as L 
+import lightning as L
 
 import spender
 from spender.util import interp1d
 from spender.util import calc_normalization
 from spender.data.sdss import SDSS
 
+
 class Spender(nn.Module):
     def __init__(
-        self, 
-        spender_model: str = 'sdss_I',
+        self,
+        spender_model: str = "sdss_I",
         pretrained_backbone: bool = False,
-        ckpt_path: str = None
+        ckpt_path: str = None,
     ):
         super().__init__()
-        self.instrument, self.model = spender.hub.load(
-            spender_model
-        )
+        self.instrument, self.model = spender.hub.load(spender_model)
 
         if not pretrained_backbone:
             self.model.apply(self.init_network)
-        
+
         if ckpt_path:
             # load the checkpoint into the model
             pass
 
     @staticmethod
-    def init_network(m): # Is this covered with random number initialisations?
+    def init_network(m):  # Is this covered with random number initialisations?
         # Conv / Linear: Kaiming works well with PReLU
         if isinstance(m, (nn.Conv1d, nn.Linear)):
-            nn.init.kaiming_normal_(m.weight, nonlinearity='leaky_relu')  # good for PReLU too
+            nn.init.kaiming_normal_(
+                m.weight, nonlinearity="leaky_relu"
+            )  # good for PReLU too
             if m.bias is not None:
                 nn.init.zeros_(m.bias)
 
         # InstanceNorm: only has weights if affine=True (yours show affine=False)
         elif isinstance(m, (nn.InstanceNorm1d, nn.BatchNorm1d)):
-            if getattr(m, 'affine', False):
+            if getattr(m, "affine", False):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
             # If track_running_stats=True, you’d also do: m.reset_running_stats()
@@ -46,23 +47,12 @@ class Spender(nn.Module):
         elif isinstance(m, nn.PReLU):
             nn.init.constant_(m.weight, 0.25)
 
-    def forward(
-        self, 
-        spectrum, 
-        z,
-        return_rest_spec=False
-    ):
+    def forward(self, spectrum, z, return_rest_spec=False):
         s, spec_rest, spec_reco, valid = self.model._forward(
-            spectrum,
-            instrument=self.instrument,
-            z=z
+            spectrum, instrument=self.instrument, z=z
         )
 
-        output = {
-            "recon": spec_reco,
-            "latent": s,
-            "valid": valid
-        }
+        output = {"recon": spec_reco, "latent": s, "valid": valid}
         if return_rest_spec:
             output["spec_rest"] = spec_rest
 
@@ -91,7 +81,6 @@ class MLP(nn.Sequential):
     """
 
     def __init__(self, n_in, n_out, n_hidden=(16, 16, 16), act=None, dropout=0):
-
         if act is None:
             act = [
                 nn.LeakyReLU(),
@@ -107,9 +96,10 @@ class MLP(nn.Sequential):
 
         super(MLP, self).__init__(*layer)
 
+
 class SpeculatorActivation(nn.Module):
     def __init__(self, n_parameter, plus_one=False):
-        '''
+        """
         Activation function from the Speculator paper
 
         Paper: Alsing et al., 2020, ApJS, 249, 5
@@ -120,8 +110,8 @@ class SpeculatorActivation(nn.Module):
             Number of parameters for the activation function to act on
         plus_one: bool
             Whether to add 1 to the output
-        '''
-        
+        """
+
         super().__init__()
         self.plus_one = plus_one
         self.beta = nn.Parameter(torch.randn(n_parameter), requires_grad=True)
@@ -172,7 +162,6 @@ class SpectrumEncoder(nn.Module):
     def __init__(
         self, instrument, n_latent, n_hidden=(128, 64, 32), act=None, dropout=0
     ):
-
         super(SpectrumEncoder, self).__init__()
         self.instrument = instrument
         self.n_latent = n_latent
@@ -314,7 +303,6 @@ class SpectrumDecoder(nn.Module):
         act=None,
         dropout=0,
     ):
-
         super(SpectrumDecoder, self).__init__()
 
         if act is None:
@@ -332,7 +320,7 @@ class SpectrumDecoder(nn.Module):
         self.n_latent = n_latent
 
         # register wavelength tensors on the same device as the entire model
-        #self.register_buffer("wave_rest", wave_rest)
+        # self.register_buffer("wave_rest", wave_rest)
         device = next(self.mlp.parameters()).device
         self.wave_rest = wave_rest.to(device)
 
@@ -371,11 +359,15 @@ class SpectrumDecoder(nn.Module):
         # restframe
         spectrum = self.decode(s)
         # observed frame
-        
+
         if instrument is not None or z is not None:
-            spectrum = self.transform(spectrum, instrument=instrument, z=z, )
+            spectrum = self.transform(
+                spectrum,
+                instrument=instrument,
+                z=z,
+            )
         return spectrum
-    
+
     def transform(self, x, instrument=None, z=None, return_valid=False):
         """Transformations from restframe to observed frame
 
@@ -398,29 +390,29 @@ class SpectrumDecoder(nn.Module):
         """
         if z is None:
             z = torch.zeros(len(x), device=x.device)
-        
+
         if self.wave_rest.device != x.device:
             self.wave_rest = self.wave_rest.to(x.device)
-        
-        wave_redshifted = self.wave_rest[None,:].to(x.device) * (1 + z[:, None])
+
+        wave_redshifted = self.wave_rest[None, :].to(x.device) * (1 + z[:, None])
 
         if instrument in [False, None]:
             wave_obs = self.wave_rest
         else:
             wave_obs = instrument.wave_obs.to(x.device)
-                
+
         spectrum = interp1d(wave_redshifted, x, wave_obs)
 
         # need to zero out parts of the spectrum that our outside of the restframe range (see #34)
-        valid = wave_obs[None,:] > self.wave_rest[0] * (1 + z[:,None])
-        valid &= wave_obs[None,:] < self.wave_rest[-1] * (1 + z[:,None])
+        valid = wave_obs[None, :] > self.wave_rest[0] * (1 + z[:, None])
+        valid &= wave_obs[None, :] < self.wave_rest[-1] * (1 + z[:, None])
 
         spectrum = spectrum.masked_fill(~valid, 0)
 
         # convolve with LSF
         if instrument.lsf is not None:
             spectrum = instrument.lsf(spectrum.unsqueeze(1)).squeeze(1)
-        
+
         # apply calibration function to observed spectrum
         if instrument is not None and instrument.calibration is not None:
             spectrum = instrument.calibration(wave_obs, spectrum)
@@ -458,7 +450,6 @@ class BaseAutoencoder(nn.Module):
         encoder,
         decoder,
     ):
-
         super(BaseAutoencoder, self).__init__()
         assert encoder.n_latent == decoder.n_latent
         self.encoder = encoder
@@ -525,13 +516,15 @@ class BaseAutoencoder(nn.Module):
         """
         assert (len(normalization_range) == 2) and (
             normalization_range[0] < normalization_range[1]
-        ), "Invalid normalization range, must be a tuple/list of length 2 with the lower bound first"
-        assert (
-            normalization_range[0] < self.wave_rest[-1]
-        ), "Normalization range too low, no overlap with restframe"
-        assert (
-            normalization_range[1] > self.wave_rest[0]
-        ), "Normalization range too high, no overlap with restframe"
+        ), (
+            "Invalid normalization range, must be a tuple/list of length 2 with the lower bound first"
+        )
+        assert normalization_range[0] < self.wave_rest[-1], (
+            "Normalization range too low, no overlap with restframe"
+        )
+        assert normalization_range[1] > self.wave_rest[0], (
+            "Normalization range too high, no overlap with restframe"
+        )
         nan_like = torch.full_like(restframe, float("nan"))
 
         normalization = torch.nanmedian(
@@ -539,7 +532,7 @@ class BaseAutoencoder(nn.Module):
                 (normalization_range[0] < self.wave_rest)
                 & (self.wave_rest < normalization_range[1]),
                 restframe,
-                nan_like
+                nan_like,
             )
         )
         reconstruction = reconstruction / normalization
@@ -548,7 +541,9 @@ class BaseAutoencoder(nn.Module):
         reconstruction = reconstruction * mle
         return restframe, reconstruction
 
-    def _forward(self, y, instrument=None, z=None, s=None, normalize=False, weights=None):
+    def _forward(
+        self, y, instrument=None, z=None, s=None, normalize=False, weights=None
+    ):
         """Perform a forward pass through the model to create a latent, restframe, and reconstruction from an observed spectrum, instrument, and redshift. If inverse variance weights are passed, also normalizes the reconstruction to the observed spectrum."""
 
         if s is None:
@@ -559,11 +554,13 @@ class BaseAutoencoder(nn.Module):
         # make restframe model spectrum
         restframe = self.decode(s)
         # make resampled and interpolated reconstruction
-        reconstruction, valid = self.decoder.transform(restframe, instrument=instrument, z=z, return_valid=True)
+        reconstruction, valid = self.decoder.transform(
+            restframe, instrument=instrument, z=z, return_valid=True
+        )
 
         # normalize restframe and reconstruction to observed spectrum
         if normalize:
-            if weights is None: # vmap requires tensors
+            if weights is None:  # vmap requires tensors
                 weights = torch.ones_like(y)
             restframe, reconstruction = torch.vmap(self.normalize)(
                 y, weights * valid, restframe, reconstruction
@@ -571,7 +568,9 @@ class BaseAutoencoder(nn.Module):
 
         return s, restframe, reconstruction, valid
 
-    def forward(self, y, instrument=None, z=None, s=None, normalize=False, weights=None):
+    def forward(
+        self, y, instrument=None, z=None, s=None, normalize=False, weights=None
+    ):
         """Forward method
 
         Transforms observed spectra into their reconstruction for a given intrument and redshift. If weights are passed, also normalizes the reconstruction to the observed spectrum.
@@ -598,16 +597,15 @@ class BaseAutoencoder(nn.Module):
             Batch of spectra at redshift `z` as observed by `instrument`
         """
 
-        s, x, y_, valid = self._forward(y, instrument=instrument, z=z, s=s, normalize=normalize, weights=weights)
+        s, x, y_, valid = self._forward(
+            y, instrument=instrument, z=z, s=s, normalize=normalize, weights=weights
+        )
 
-        return {
-            "recon": y_,
-            "valid": valid,
-            "latent": s,
-            "z": z
-        }
+        return {"recon": y_, "valid": valid, "latent": s, "z": z}
 
-    def loss(self, y, w, instrument=None, z=None, s=None, normalize=False, individual=False):
+    def loss(
+        self, y, w, instrument=None, z=None, s=None, normalize=False, individual=False
+    ):
         """Weighted MSE loss
 
         Parameter
@@ -633,7 +631,9 @@ class BaseAutoencoder(nn.Module):
         -------
         float or `torch.tensor`, shape (N,) of weighted MSE loss
         """
-        s, x, y_, valid = self._forward(y, instrument=instrument, z=z, s=s, normalize=normalize)
+        s, x, y_, valid = self._forward(
+            y, instrument=instrument, z=z, s=s, normalize=normalize
+        )
 
         return self._loss(y, w * valid, y_, individual=individual)
 
@@ -695,7 +695,6 @@ class SpectrumAutoencoder(BaseAutoencoder):
         n_hidden=(64, 256, 1024),
         act=None,
     ):
-
         encoder = SpectrumEncoder(instrument, n_latent)
 
         decoder = SpectrumDecoder(
@@ -709,6 +708,7 @@ class SpectrumAutoencoder(BaseAutoencoder):
             encoder,
             decoder,
         )
+
 
 class SpenderSDSS(BaseAutoencoder):
     """Concrete implementation of spectrum encoder
@@ -735,22 +735,17 @@ class SpenderSDSS(BaseAutoencoder):
         self,
         n_latent=10,
         n_hidden=(64, 256, 1024),
-        z_max = 0.5,
-        superresolution = 1.0,
+        z_max=0.5,
+        superresolution=1.0,
         act=None,
     ):
         instrument = SDSS()
         encoder = SpectrumEncoder(instrument, n_latent)
 
-        lmbda_min = instrument.wave_obs.min()/(1+z_max)
+        lmbda_min = instrument.wave_obs.min() / (1 + z_max)
         lmbda_max = instrument.wave_obs.max()
         bins = int(superresolution * instrument.wave_obs.shape[0] * (1 + z_max))
-        wave_rest = torch.linspace(
-            lmbda_min, 
-            lmbda_max, 
-            int(bins), 
-            dtype=torch.float32
-        )
+        wave_rest = torch.linspace(lmbda_min, lmbda_max, int(bins), dtype=torch.float32)
 
         decoder = SpectrumDecoder(
             wave_rest,
@@ -764,37 +759,35 @@ class SpenderSDSS(BaseAutoencoder):
             decoder,
         )
 
+
 class LightningSpender(L.LightningModule):
-    def __init__(
-            self, 
-            model, 
-            lr, 
-            batch_size, 
-            vae_ckpt_path=None, 
-            ckpt_path=None
-        ):
+    def __init__(self, model, lr, batch_size, vae_ckpt_path=None, ckpt_path=None):
         super().__init__()
-        self.model = model #.to(self.device)
+        self.model = model  # .to(self.device)
         self.lr = lr
         self.batch_size = batch_size
         self.ckpt_path = ckpt_path
 
         if vae_ckpt_path:
-            state_dict = torch.load(
-                vae_ckpt_path
-            )["state_dict"]
-            #state_dict = {k.replace("vae.", "", 1): v for k, v in state_dict.items()}
+            state_dict = torch.load(vae_ckpt_path)["state_dict"]
+            # state_dict = {k.replace("vae.", "", 1): v for k, v in state_dict.items()}
             self.model.load_state_dict(state_dict, strict=False)
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(
-            self.model.parameters(), 
-            lr=self.lr
-        )
+        return torch.optim.AdamW(self.model.parameters(), lr=self.lr)
 
     def base_step(self, batch, partition, individual=False):
         output = self.model(y=batch["X"], z=batch["catalog"]["z"])
-        loss_ind = torch.sum(0.5 * output["valid"]*batch["w"] * torch.pow(batch["X"] - output["recon"], 2), dim=1) / batch["X"].shape[1]
+        loss_ind = (
+            torch.sum(
+                0.5
+                * output["valid"]
+                * batch["w"]
+                * torch.pow(batch["X"] - output["recon"], 2),
+                dim=1,
+            )
+            / batch["X"].shape[1]
+        )
 
         if individual:
             return loss_ind
@@ -819,32 +812,32 @@ class LightningSpender(L.LightningModule):
             "X": batch["X"],
             "recon": output["recon"],
             "latent": output["latent"],
-            "z": output["z"]
+            "z": output["z"],
         }
 
+
 class PretrainedSpender(nn.Module):
-    # weight init would be a useful option here
-    # for full pre-training.
+    # weight init would be a useful option here
+    # for full pre-training.
     def __init__(self, model, latent_dim):
         super().__init__()
-        _, self.model = spender.hub.load(
-            model
-        )
-        self.latent_dim = latent_dim 
+        _, self.model = spender.hub.load(model)
+        self.latent_dim = latent_dim
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad_(False)
-    
+
     @torch.no_grad()
     def encode(self, X):
         return self.model.encoder(X)
-    
+
     @torch.no_grad()
     def decoder(self, Z):
         return self.model.decoder(Z)
-    
+
+
 if __name__ == "__main__":
-    '''
+    """
     from wwdc.data.modules import WWDCDataset, WWDCDataLoader
     from wwdc.data.sdss_II import SDSS_II
 
@@ -857,11 +850,11 @@ if __name__ == "__main__":
         print(batch["X"].shape)
         print(batch["catalog"]["z"].shape)
         break
-    '''
-    #spender_ = Spender()
-    #print(spender_)
-  
-    '''
+    """
+    # spender_ = Spender()
+    # print(spender_)
+
+    """
     from spender.data.sdss import SDSS
 
     instrument = SDSS()
@@ -902,29 +895,23 @@ if __name__ == "__main__":
     print(loss.device)
     loss.backward()
     print("Finsished!")
-    '''
-    
-    '''model = LightningFlowMatching(
+    """
+
+    """model = LightningFlowMatching(
         lr=1e-4,
         batch_size=256
-    )'''
+    )"""
 
-    '''
+    """
     output = model(
     )
-    '''
-    
+    """
+
     x = torch.rand(1, 3921)
-    model = PretrainedSpender(
-        model="sdss_I",
-        latent_dim=10
-    )
-    print(
-        model.encode(x)
-    )
-    
-    
-    '''from hydra import compose, initialize
+    model = PretrainedSpender(model="sdss_I", latent_dim=10)
+    print(model.encode(x))
+
+    """from hydra import compose, initialize
     from hydra.utils import instantiate
 
     with initialize(version_base=None, config_path="../../../src/conf/"):
@@ -942,6 +929,6 @@ if __name__ == "__main__":
             batch,
             partition="train"
         )
-        break'''
-    
+        break"""
+
 # need to create a Lightning Loader for that model.

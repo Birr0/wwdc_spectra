@@ -7,12 +7,11 @@ from lightning.pytorch import seed_everything
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from wwdc_spectra.inference.modules import (
-    create_lightning_loader
-)
+from wwdc_spectra.inference.modules import create_lightning_loader
 # wandb_format
 
 log = logging.getLogger(__name__)
+
 
 @hydra.main(
     version_base=None,
@@ -63,7 +62,7 @@ def main(cfg):
                 if (cfg.batch_limit is not None) and (idx >= cfg.batch_limit):
                     break
                 try:
-                    # need to add embed_opt to the config.
+                    # need to add embed_opt to the config.
                     X, y, _id = batch
                     predictions = lightning_loader.predict_step(
                         X=X, y=y, embed_opt=cfg.embed_opt
@@ -76,10 +75,7 @@ def main(cfg):
                     if not path.exists():
                         path.mkdir(parents=True, exist_ok=True)
 
-                    pq.write_table(
-                        pa.table(data), 
-                        path / f"{idx}.parquet"
-                    )
+                    pq.write_table(pa.table(data), path / f"{idx}.parquet")
 
                 except Exception as e:
                     msg = f"Error creating embeddings: {e}"
@@ -90,7 +86,7 @@ def main(cfg):
                 cfg.logger.wandb.tags.append(str(model_id))
                 cfg.logger.wandb.id = model_id
                 cfg.logger.wandb.name = f"{model_id}_{cfg.meta.experiment_name}"
-                #wandb_logger = hydra.utils.instantiate(cfg.logger.wandb)
+                # wandb_logger = hydra.utils.instantiate(cfg.logger.wandb)
                 msg = "Wandb logger instantiated."
                 log.info(msg)
 
@@ -98,8 +94,8 @@ def main(cfg):
                 msg = f"Error instantiating wandb logger: {e}"
                 log.error(msg)
                 raise e
-            
-            '''
+
+            """
             #Don't include wandb logging
             try:
                 print(f"wandb_logger: {wandb_logger}")
@@ -119,7 +115,7 @@ def main(cfg):
                 msg = f"Error logging embeddings to wandb: {e}"
                 log.error(msg)
                 raise e
-            '''
+            """
 
     log.info("Inference complete.")
     return

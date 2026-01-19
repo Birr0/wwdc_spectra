@@ -31,6 +31,7 @@ class WWDCEmbeddingDataset(Dataset):
     def __getitem__(self, idx):
         return {k: torch.tensor(v) for k, v in self.embedding_dset[idx].items()}
 
+
 class WWDCEmbeddingDataLoader(L.LightningDataModule):
     def __init__(
         self,
@@ -78,6 +79,7 @@ class WWDCEmbeddingDataLoader(L.LightningDataModule):
 
     def test_dataloader(self):
         return self.base_dataloader(self.test_dataset, "test")
+
 
 if __name__ == "__main__":
     test_dataset = WWDCEmbeddingDataset(

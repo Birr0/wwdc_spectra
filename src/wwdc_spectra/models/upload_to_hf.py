@@ -8,33 +8,21 @@ load_dotenv()
 
 data_name = "sdss_II"
 experiment_name = "spender_I_flow"
-model_names = [
-    f"6997867_{i}.ckpt" for i in range(3)
-]
+model_names = [f"6997867_{i}.ckpt" for i in range(3)]
 data_root = os.getenv("DATA_ROOT")
 
-def ckpt_path(
-    experiment_name,
-    model_name
-):
+
+def ckpt_path(experiment_name, model_name):
     return f"{data_root}/{data_name}/{experiment_name}/ckpts/{model_name}"
 
-code_dim=10
-hidden_dim=256 
+
+code_dim = 10
+hidden_dim = 256
 cond_dim = 1
-model = VelocityField(
-    code_dim, 
-    hidden_dim, 
-    cond_dim
-)
+model = VelocityField(code_dim, hidden_dim, cond_dim)
 
 for i in range(3):
-    ckpt = torch.load(
-        ckpt_path(
-            experiment_name,
-            model_names[0]
-        )
-    )
+    ckpt = torch.load(ckpt_path(experiment_name, model_names[0]))
 
     state_dict = {}
     for k in list(ckpt["state_dict"].keys()):
@@ -42,15 +30,13 @@ for i in range(3):
         if prefix == "vf":
             state_dict[key] = ckpt["state_dict"][f"{prefix}.{key}"]
 
-    model.load_state_dict(
-        state_dict
-    )
+    model.load_state_dict(state_dict)
     model.push_to_hub(f"Birr001/spender-I-vf-{i}")
 
-# could possibly clean this up using config loaders.
+# could possibly clean this up using config loaders.
 
 
-'''class MyModel(
+"""class MyModel(
     nn.Module,
     PyTorchModelHubMixin, 
     # optionally, you can add metadata which gets pushed to the model card
@@ -79,5 +65,4 @@ model.push_to_hub("Birr001/test")
 
 # reload
 model = MyModel.from_pretrained("Birr001/test")
-'''
-
+"""

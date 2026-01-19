@@ -6,8 +6,10 @@ from datasets import Dataset
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
 
+
 def convert_to_np(values):
     return [value.detach().cpu().numpy() for value in values]
+
 
 def create_embeddings(predictions, split):
     _catalog = {}
@@ -38,6 +40,7 @@ def create_embeddings(predictions, split):
 
     return Dataset.from_dict(predictions, split=split)
 
+
 def wandb_format(embeddings, x_ds):
     X_collection = []
     recon_collection = []
@@ -63,6 +66,7 @@ def wandb_format(embeddings, x_ds):
     if z_collection:
         embeddings["z"] = z_collection
     return embeddings
+
 
 def create_lightning_loader(cfg):
     ckpt_dir = Path(cfg.paths.ckpt_dir)
@@ -110,6 +114,7 @@ def create_lightning_loader(cfg):
         ckpt_path.stem,
         int(HydraConfig.get().job.id),
     )
+
 
 def get_ckpt_files(ckpt_dir):
     if not ckpt_dir.exists():
