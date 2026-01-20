@@ -66,13 +66,19 @@ def main(cfg):
                     break
                 try:
                     # need to add embed_opt to the config.
-                    X, y, _id = batch
+                    X, y, _id, ra, dec, z = batch
                     predictions = lightning_loader.predict_step(
                         X=X, y=y, embed_opt=cfg.embed_opt
                     )
 
                     data = {k: v.tolist() for k, v in predictions.items()}
+
+                    # add id
                     data["id"] = _id
+                    # positional info
+                    data["z"] = z.tolist()
+                    data["ra"] = ra.tolist()
+                    data["dec"] = dec.tolist()
 
                     path = Path(cfg.paths.embed_dir + f"{model_id}/{name}/")
                     if not path.exists():
