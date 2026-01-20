@@ -1,12 +1,13 @@
 from typing import Protocol
 
 import torch
- 
-class BaseModel(Protocol):
-    latent_dim: int 
 
-    def encode(self, X: torch.Tensor) -> torch.Tensor:
-        ...
+
+class BaseModel(Protocol):
+    latent_dim: int
+
+    def encode(self, X: torch.Tensor) -> torch.Tensor: ...
+
 
 def get_conditional_len(y_catalog: dict) -> int:
     """

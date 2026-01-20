@@ -1,18 +1,14 @@
-import os 
+import os
 
 from datasets import load_dataset
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
 from huggingface_hub import login
 
 load_dotenv()
 login()
 
-DATA_ROOT = os.getenv(
-    "DATA_ROOT"
-)
-HF_USERNAME = os.getenv(
-    "HF_USERNAME"
-)
+DATA_ROOT = os.getenv("DATA_ROOT")
+HF_USERNAME = os.getenv("HF_USERNAME")
 
 DATA_NAME = "sdss_II"
 EXPERIMENT_NAME ="spender_II_flow"  #"spender_I_flow"
@@ -27,7 +23,7 @@ models = [
 
 split = "test"
 embedding_dirs = [
-    f"{DATA_ROOT}/{DATA_NAME}/{EXPERIMENT_NAME}/embeddings/{model}/{split}" 
+    f"{DATA_ROOT}/{DATA_NAME}/{EXPERIMENT_NAME}/embeddings/{model}/{split}"
     for model in models
 ]
 

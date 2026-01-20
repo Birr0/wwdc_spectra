@@ -31,6 +31,7 @@ class WWDCEmbeddingDataset(Dataset):
     def __getitem__(self, idx):
         return {k: torch.tensor(v) for k, v in self.embedding_dset[idx].items()}
 
+
 class WWDCEmbeddingDataLoader(L.LightningDataModule):
     def __init__(
         self,
@@ -79,14 +80,11 @@ class WWDCEmbeddingDataLoader(L.LightningDataModule):
     def test_dataloader(self):
         return self.base_dataloader(self.test_dataset, "test")
 
+
 if __name__ == "__main__":
     test_dataset = WWDCEmbeddingDataset(
         "/data/dtce-schmidt/phys2526/\
         galaxy10_decals/galaxy10_VAE/embeddings/5287281/test",
         y_catalog=None,
     )
-
     print(test_dataset[0])
-    """loader = WWDCEmbeddingDataLoader(
-        datasets={"train": train_dataset, "val": val_dataset, "test": test_dataset}
-    )

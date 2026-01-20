@@ -1,5 +1,4 @@
 import copy
-import os
 
 import lightning as L
 import torch
@@ -42,7 +41,7 @@ class WWDCDataset(Dataset):
             if len(cat_entry) > 0:
                 return torch.cat(list(cat_entry.values()), dim=0)
             return torch.tensor([])
-        elif self.y_catalog["join_method"] == None:
+        elif self.y_catalog["join_method"] is None:
             return cat_entry
         msg = f"Invalid join_method: {self.y_catalog['join_method']}"
         raise ValueError(msg)
@@ -64,7 +63,7 @@ class WWDCDataLoader(L.LightningDataModule):
         self.val_split = val_split
         self.random_state = random_state
         if not num_workers:
-            self.num_workers = 1 #os.cpu_count() - 1
+            self.num_workers = 1  # os.cpu_count() - 1
         else:
             self.num_workers = num_workers
         self.shuffle = shuffle
@@ -90,13 +89,12 @@ class WWDCDataLoader(L.LightningDataModule):
 
         if self.datasets["val"] is not None:
             self.val_dataset = self.datasets["val"]
-        
+
         else:
             if self.val_split > 0.0 and self.val_split < 1.0:
                 self.create_val_split(
                     self.train_dataset
                 )  # creates self.train_dataset, self.val_dataset
-
 
     def base_dataloader(self, dataset, split):
         return DataLoader(

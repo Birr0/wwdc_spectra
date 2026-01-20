@@ -1,20 +1,16 @@
 # Need to make a torch model wrapper for spender
 import torch
 import torch.nn as nn
-import lightning as L 
+import lightning as L
 
 from torch import Tensor
 from wwdc_spectra.models.modules import get_conditional_len, BaseModel
-from flow_matching.utils import ModelWrapper
 from flow_matching.path import AffineProbPath
 from flow_matching.path.scheduler import CondOTScheduler
 from flow_matching.solver import ODESolver
 from timm.layers import trunc_normal_
-import torch.distributions as D
 from huggingface_hub import PyTorchModelHubMixin
 
-
-import spender
 
 class VelocityField(nn.Module, PyTorchModelHubMixin):
     def __init__(self, code_dim, hidden_dim, conditional_dim):
@@ -38,32 +34,26 @@ class VelocityField(nn.Module, PyTorchModelHubMixin):
             embedding_dim=conditional_dim,
         )
 
-    def forward(self, t: Tensor, x_t: Tensor, y: Tensor): 
-        # flag here if you want conditional and unconditional output.
+    def forward(self, t: Tensor, x_t: Tensor, y: Tensor):
+        # flag here if you want conditional and unconditional output.
         if t.ndim == 0:
             t = t.expand(x_t.shape[0])
 
         null_vector = self.null_y(
-            torch.zeros(
-                y.size(0), 
-                dtype=torch.long, 
-                device=x_t.device
-            )
+            torch.zeros(y.size(0), dtype=torch.long, device=x_t.device)
         )
         x_t = torch.cat([x_t, x_t], dim=0)
         t = torch.cat([t, t], dim=0).unsqueeze(-1)
         x_t = torch.cat([x_t, t], dim=1)
 
-        y = torch.cat([
-            y,
-            null_vector
-        ])
+        y = torch.cat([y, null_vector])
         gamma, beta = self.FiLM_params(y).chunk(2, dim=1)
         for idx, layer in enumerate(self.vf):
             x_t = layer(x_t)
             if idx != len(self.vf) - 1 and isinstance(layer, nn.Linear):
                 x_t = gamma * x_t + beta
         return x_t
+
 
 class WrappedModel(nn.Module):
     """Wrapper around velocity model to inject month condition during inference.
@@ -78,7 +68,6 @@ class WrappedModel(nn.Module):
     def __init__(self, velocity_model):
         super().__init__()
         self.velocity_model = velocity_model
-
 
     def forward(self, x, t, **model_extras):
         """Forward pass with classifier-free guidance.
@@ -100,7 +89,7 @@ class WrappedModel(nn.Module):
         v = self.velocity_model(x_t=x, t=t, y=y)
         v_cond, v_uncond = torch.chunk(v, chunks=2, dim=0)
         return (1 - cfg_scale) * v_uncond + cfg_scale * v_cond
-        
+
 
 class LightningFlowMatching(L.LightningModule):
     def __init__(
@@ -123,11 +112,7 @@ class LightningFlowMatching(L.LightningModule):
         self.lr = lr
 
         # --- Models --- #
-        self.vf = VelocityField(
-            code_dim, 
-            hidden_dim, 
-            get_conditional_len(catalog)
-        )
+        self.vf = VelocityField(code_dim, hidden_dim, get_conditional_len(catalog))
         self.vf.apply(self._init_weights)
         self.base_model = base_model
 
@@ -141,9 +126,7 @@ class LightningFlowMatching(L.LightningModule):
             self.wrapped_vf = WrappedModel(self.vf)
             # ODE solver hparams
             self.n_steps = n_steps
-            self.solver = ODESolver(
-                velocity_model=self.wrapped_vf
-            )
+            self.solver = ODESolver(velocity_model=self.wrapped_vf)
             self.wrapped_vf = WrappedModel(self.vf)
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -167,31 +150,18 @@ class LightningFlowMatching(L.LightningModule):
     def base_step(self, batch, partition):
         X, y = batch
 
-        z = self.base_model.encode(
-            X
-        )
+        z = self.base_model.encode(X)
 
         x_0 = torch.randn_like(z)
         t = torch.rand(z.shape[0], device=z.device)
-        
-        # sample probability path
-        path_sample = self.path.sample(
-            t=t, 
-            x_0=x_0, 
-            x_1=z
-        )
 
-        # flow matching l2 loss 
-        ut = self.vf(
-            x_t=path_sample.x_t, 
-            y=y, 
-            t=path_sample.t
-        )
-        
-        u_target = torch.cat(
-            [path_sample.dx_t, path_sample.dx_t], 
-            dim=0
-        )
+        # sample probability path
+        path_sample = self.path.sample(t=t, x_0=x_0, x_1=z)
+
+        # flow matching l2 loss
+        ut = self.vf(x_t=path_sample.x_t, y=y, t=path_sample.t)
+
+        u_target = torch.cat([path_sample.dx_t, path_sample.dx_t], dim=0)
         loss = torch.pow(
             ut - u_target,
             2,
@@ -215,7 +185,7 @@ class LightningFlowMatching(L.LightningModule):
         with torch.no_grad():
             output = {}
             code = self.base_model.encode(X)
-            if "orig" in embed_opt: 
+            if "orig" in embed_opt:
                 output["orig"] = code
 
             # could reduce this to a single forward pass.
@@ -223,19 +193,19 @@ class LightningFlowMatching(L.LightningModule):
                 output["cond"] = self.solver.sample(
                     x_init=code,
                     step_size=None,
-                    y=y, 
+                    y=y,
                     cfg_scale=1.0,
                     time_grid=self.T,
-                    method="midpoint"
+                    method="midpoint",
                 )
 
             if "uncond" in embed_opt:
-                output['uncond'] = self.solver.sample(
+                output["uncond"] = self.solver.sample(
                     x_init=code,
                     step_size=None,
-                    y=y, 
+                    y=y,
                     cfg_scale=0.0,
                     time_grid=self.T,
-                    method="midpoint"
+                    method="midpoint",
                 )
         return output
