@@ -40,5 +40,8 @@ hydra:
       +data.loader.datasets.train.return_id: True
       +data.loader.datasets.val.return_id: True
       +data.loader.datasets.test.return_id: True
+      +data.loader.datasets.train.return_pos: True
+      +data.loader.datasets.val.return_pos: True
+      +data.loader.datasets.test.return_pos: True
       +lightning_loader.n_steps: 20
       

@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from torch.utils.data import Dataset
 from spender.instrument import get_skyline_mask
 
-
 load_dotenv()
 RAW_DATA_DIR = os.getenv("DATA_ROOT") + "/sdss/"
 DATA_DIR = os.getenv("DATA_ROOT") + "/sdss/sdss_II_catalog"
@@ -14,7 +13,14 @@ LOADING_SCRIPT = "./sdss_II_resources/sdss_mmu.py"
 
 
 class SDSS(Dataset):
-    def __init__(self, split="train", x_ds=None, y_catalog=None, return_id=False):
+    def __init__(
+        self, 
+        split="train", 
+        x_ds=None, 
+        y_catalog=None, 
+        return_id=False, 
+        return_pos=False
+    ):
         if not self.data_exists():
             if not self.raw_data_exists():
                 msg = f"""
@@ -59,9 +65,10 @@ class SDSS(Dataset):
 
         self.dataset = load_from_disk(DATA_DIR)[split]
         self._wave_obs = 10 ** torch.arange(3.578, 3.97, 0.0001)
-        self._skyline_mask = get_skyline_mask(self._wave_obs)
-        self.return_id = return_id
-
+        self._skyline_mask = get_skyline_mask(self._wave_obs)      
+        self.return_id = return_id  
+        self.return_pos = return_pos
+    
     @staticmethod
     def raw_data_exists():
         # simple check of the path.
@@ -122,22 +129,15 @@ class SDSS(Dataset):
         zerr: `torch.tensor`, shape (1, )
             Redshift error (only returned when argument z=None)
         """
-        # hdulist = fits.open(filename)
-        # data = hdulist[1].data
-
         loglam = torch.log10(
             torch.tensor(wavelengths)
-        )  # np.log10(obj["spectrum"]["lambda"])
-        flux = torch.tensor(
-            flux, dtype=torch.float32
-        )  # np.array(obj["spectrum"]["flux"])
-        # flux_nan = flux.isnan()
-        ivar = torch.tensor(
-            ivar, dtype=torch.float32
-        )  # np.array(obj["spectrum"]["ivar"])
+        )
+        flux = torch.tensor(flux, dtype=torch.float32)  #np.array(obj["spectrum"]["flux"])
 
-        # apply bitmask, remove small values
-        # mask = np.array(obj["spectrum"]["mask"]) #data["and_mask"].astype(bool) | (ivar <= 1e-6)
+        flux_nan = flux.isnan()
+
+        ivar = torch.tensor(ivar, dtype=torch.float32) #np.array(obj["spectrum"]["ivar"])
+
         ivar[mask] = 0
 
         # loglam is subset of _wave_obs, need to insert into extended tensor
@@ -179,7 +179,6 @@ class SDSS(Dataset):
 
         # This is required to remove NaNs from the spectrum, if present.
         # Otherwise, the loss is poisioned.
-
         finite_spec = torch.isfinite(spec)
         finite_w = torch.isfinite(w)
         good = finite_spec & finite_w
@@ -218,11 +217,14 @@ class SDSS(Dataset):
                 if k not in self.y_catalog["drop_variables"]
             ]
         )
-        if self.return_id:
-            return spec, y, item["BESTOBJID"]
-        return spec, y
-        # Add a flag to return catalog. This should not happen during training!
 
+        if self.return_id and (not self.return_pos):
+            return spec, y, item["BESTOBJID"]
+        elif (not self.return_id) and self.return_pos:
+            return spec, y, item["ra"], item["dec"], item["Z"]
+        elif self.return_id and self.return_pos:
+            return spec, y, item["BESTOBJID"], item["ra"], item["dec"], item["Z"]
+        return spec, y
 
 class SDSS_AION(SDSS):
     def __getitem__(self, idx):

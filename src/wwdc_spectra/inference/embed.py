@@ -62,14 +62,20 @@ def main(cfg):
                 if (cfg.batch_limit is not None) and (idx >= cfg.batch_limit):
                     break
                 try:
-                    # need to add embed_opt to the config.
-                    X, y, _id = batch
+                    # need to add embed_opt to the config.
+                    X, y, _id, ra, dec, z = batch
                     predictions = lightning_loader.predict_step(
                         X=X, y=y, embed_opt=cfg.embed_opt
                     )
 
                     data = {k: v.tolist() for k, v in predictions.items()}
+
+                    # add id
                     data["id"] = _id
+                    # positional info
+                    data["z"] = z.tolist()
+                    data["ra"] = ra.tolist()
+                    data["dec"] = dec.tolist()
 
                     path = Path(cfg.paths.embed_dir + f"{model_id}/{name}/")
                     if not path.exists():
@@ -82,6 +88,7 @@ def main(cfg):
                     log.error(msg)
                     raise e
 
+            '''
             try:
                 cfg.logger.wandb.tags.append(str(model_id))
                 cfg.logger.wandb.id = model_id
@@ -94,9 +101,8 @@ def main(cfg):
                 msg = f"Error instantiating wandb logger: {e}"
                 log.error(msg)
                 raise e
-
-            """
-            #Don't include wandb logging
+            
+            
             try:
                 print(f"wandb_logger: {wandb_logger}")
                 print(
@@ -115,7 +121,7 @@ def main(cfg):
                 msg = f"Error logging embeddings to wandb: {e}"
                 log.error(msg)
                 raise e
-            """
+            '''
 
     log.info("Inference complete.")
     return
