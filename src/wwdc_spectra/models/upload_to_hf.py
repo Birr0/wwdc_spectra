@@ -9,9 +9,10 @@ from flow import VelocityField
 load_dotenv()
 
 data_name = "sdss_II"
-experiment_name = "spender_I_flow"
+experiment_id = "7000609" # 6997867
+experiment_name = "spender_II_flow"
 model_names = [
-    f"6997867_{i}.ckpt" for i in range(3)
+    f"{experiment_id}_{i}.ckpt" for i in range(3)
 ]
 data_root = os.getenv("DATA_ROOT")
 
@@ -21,7 +22,7 @@ def ckpt_path(
 ):
     return f"{data_root}/{data_name}/{experiment_name}/ckpts/{model_name}"
 
-code_dim=10
+code_dim=6 #10
 hidden_dim=256 
 cond_dim = 1
 model = VelocityField(
@@ -47,7 +48,7 @@ for i in range(3):
     model.load_state_dict(
         state_dict
     )
-    model.push_to_hub(f"Birr001/spender-I-vf-{i}")
+    model.push_to_hub(f"Birr001/spender-II-vf-{i}")
 
 # could possibly clean this up using config loaders.
 
