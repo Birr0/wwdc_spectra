@@ -94,6 +94,7 @@ def main(cfg):
                     log.error(msg)
                     raise e
 
+            '''
             try:
                 cfg.logger.wandb.tags.append(str(model_id))
                 cfg.logger.wandb.id = model_id
@@ -106,6 +107,7 @@ def main(cfg):
                 msg = f"Error instantiating wandb logger: {e}"
                 log.error(msg)
                 raise e
+            
             
             try:
                 print(f"wandb_logger: {wandb_logger}")
@@ -125,6 +127,7 @@ def main(cfg):
                 msg = f"Error logging embeddings to wandb: {e}"
                 log.error(msg)
                 raise e
+            '''
 
     log.info("Inference complete.")
     return
