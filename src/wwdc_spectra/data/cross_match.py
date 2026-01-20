@@ -28,7 +28,7 @@ EXT_CATALOG_INT_FEATURES = [
 
 DATA_ROOT = os.getenv("DATA_ROOT")
 CATALOG_DIR = DATA_ROOT + "/sdss/GSWLC-X2.dat"
-MATCHED_CAT_FP = DATA_ROOT + "/sdss/GSWLC-X2-matched-test.csv"
+MATCHED_CAT_FP = DATA_ROOT + "/sdss/GSWLC-X2-matched-test.parquet"
 HF_USERNAME = os.getenv("HF_USERNAME")
 
 def _norm_id(x):
@@ -109,8 +109,6 @@ def match_catalog_to_embeddings(
     mask = picked["abs_dz"].to_numpy() <= tol
     picked.loc[~mask, keep_cols[1:]] = np.nan   # blank unmatched (z and features)
 
-    # Inspect
-
     df = picked[['ObjID', 'z_batch', 'rchi2', 'logM*', 'logM*_err', 'logSFR',
         'logSFR_err', 'A_fuv', 'A_fuv_err', 'A_b', 'A_b_err', 'A_v', 'A_v_err',
         'flag_sed', 'UV_survey', 'flag_uv', 'flag_midir', 'flag_mgs']]
@@ -119,7 +117,7 @@ def match_catalog_to_embeddings(
         "ObjID": "id",
         "z_batch": "z"
     })
-    df["id"] = df["id"].astype(str)
+    df["id"] = df["id"].map(_norm_id)
 
     return df
 
@@ -149,9 +147,7 @@ def merge_matched_cat_with_embeddings(
     return matched_df 
 
 if __name__ == "__main__":
-    pass 
-    '''
-    catalog, keep_cols = process_gswlc_catalog(
+    '''catalog, keep_cols = process_gswlc_catalog(
         catalog_dir=CATALOG_DIR
     )
     embeddings = process_embeddings(
@@ -165,22 +161,20 @@ if __name__ == "__main__":
     )
 
     # save csv of the matched catalog.
-    matched_cat.to_csv(
-        MATCHED_CAT_FP
+    matched_cat.to_parquet(
+        MATCHED_CAT_FP,
+        index=False
     )
 
     # upload to hugging face
     data_files = {"test": MATCHED_CAT_FP}  # label it correctly
-    ds_dict = load_dataset("csv", data_files=data_files)
-    # from datasets import Value, Features
-    #new_features = ds_dict["test"].features.copy()
-    #new_features["id"] = Value("string")
-    #ds_dict = ds_dict.cast(Features(new_features))
+    ds_dict = load_dataset("parquet", data_files=data_files) 
 
     ds_dict.push_to_hub(
         f"{HF_USERNAME}/spectra_catalog",
         private=False,  # optional
-    )
-    '''
+    )'''
 
-    #df = merge_matched_cat_with_embeddings()
+    df = merge_matched_cat_with_embeddings()
+
+    
