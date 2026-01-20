@@ -8,6 +8,7 @@ from flow import VelocityField
 
 load_dotenv()
 
+
 data_name = "sdss_II"
 experiment_id = "7000609" # 6997867
 experiment_name = "spender_II_flow"
@@ -15,6 +16,8 @@ model_names = [
     f"{experiment_id}_{i}.ckpt" for i in range(3)
 ]
 data_root = os.getenv("DATA_ROOT")
+HF_USERNAME = os.getnev("HF_USERNAME")
+
 
 def ckpt_path(
     experiment_name,
@@ -48,39 +51,6 @@ for i in range(3):
     model.load_state_dict(
         state_dict
     )
-    model.push_to_hub(f"Birr001/spender-II-vf-{i}")
+    model.push_to_hub(f"{HF_USERNAME}/spender-II-vf-{i}")
 
 # could possibly clean this up using config loaders.
-
-
-'''class MyModel(
-    nn.Module,
-    PyTorchModelHubMixin, 
-    # optionally, you can add metadata which gets pushed to the model card
-    repo_url="your-repo-url",
-    pipeline_tag="text-to-image",
-    license="mit",
-):
-    def __init__(self, num_channels: int, hidden_size: int, num_classes: int):
-        super().__init__()
-        self.param = nn.Parameter(torch.rand(num_channels, hidden_size))
-        self.linear = nn.Linear(hidden_size, num_classes)
-
-    def forward(self, x):
-        return self.linear(x + self.param)
-
-# create model
-config = {"num_channels": 3, "hidden_size": 32, "num_classes": 10}
-model = MyModel(**config)
-
-# save locally
-#model.save_pretrained("my-awesome-model")
-
-login()
-# push to the hub
-model.push_to_hub("Birr001/test")
-
-# reload
-model = MyModel.from_pretrained("Birr001/test")
-'''
-
