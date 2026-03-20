@@ -49,6 +49,7 @@ def main(cfg):
         cfg, model_id, job_id = create_lightning_loader(cfg)
         print(f"cfg: {cfg}. Model ID: {model_id}. Job ID: {job_id}")
         lightning_loader = hydra.utils.instantiate(cfg.lightning_loader)
+        print(lightning_loader)
         msg = "Lightning loader instantiated."
         log.info(msg)
     except Exception as e:
@@ -59,11 +60,12 @@ def main(cfg):
     for name, split in split_dataloaders.items():
         if split["call"]:
             for idx, batch in enumerate(split["dataloader"]):
-                if (cfg.batch_limit is not None) and (idx >= cfg.batch_limit):
-                    break
+                if (cfg.batch_limit is not None):
+                    if idx >= cfg.batch_limit:
+                        break
                 try:
                     # need to add embed_opt to the config.
-                    X, y, _id, ra, dec, z = batch
+                    X, y, _id, ra, dec, z, mask_ratio = batch
                     predictions = lightning_loader.predict_step(
                         X=X, y=y, embed_opt=cfg.embed_opt
                     )
@@ -76,6 +78,7 @@ def main(cfg):
                     data["z"] = z.tolist()
                     data["ra"] = ra.tolist()
                     data["dec"] = dec.tolist()
+                    data["mask_ratio"] = mask_ratio.tolist()
 
                     path = Path(cfg.paths.embed_dir + f"{model_id}/{name}/")
                     if not path.exists():
