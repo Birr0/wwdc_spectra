@@ -70,10 +70,12 @@ def process_gswlc_catalog(
 
 
 def process_embeddings(
-    name="spender-I-vf-0"
+    name="spender-I-vf-0",
+    split="test"
 ):
     # Open embedding data.
-    embedding_data = load_dataset(f"{HF_USERNAME}/{name}")["test"]
+    
+    embedding_data = load_dataset(f"{HF_USERNAME}/{name}")[split]
     # change harcoded test split later
 
     df = pd.DataFrame({
@@ -125,56 +127,58 @@ def merge_matched_cat_with_embeddings(
     matched_cat="spectra_catalog",
     embeddings="spender-I-vf-0",
     key="id",
-    join="left outer"
+    join="left outer",
+    split="test"
 ):
     # could add in local file checks.
     matched_cat = load_dataset(
         f"{HF_USERNAME}/{matched_cat}"
-    )["test"].to_pandas()
+    )[split].to_pandas()
     embeddings = load_dataset(
         f"{HF_USERNAME}/{embeddings}"
-    )["test"].to_pandas()
-
-    # remove hardcoded test split selection.
-    # for future implementations.
+    )[split].to_pandas()
 
     matched_df = pd.merge(
         matched_cat, 
         embeddings,
         'left'
-    )
+    ).dropna() # drop any NaN columns
     
     return matched_df 
 
 if __name__ == "__main__":
-    '''catalog, keep_cols = process_gswlc_catalog(
-        catalog_dir=CATALOG_DIR
-    )
-    embeddings = process_embeddings(
-        name="spender-I-vf-0"
-    )
+    data_files = {}
 
-    matched_cat = match_catalog_to_embeddings(
-        embeddings=embeddings,
-        catalog=catalog,
-        keep_cols=keep_cols
-    )
+    for split in ["train", "test", "val"]:
+        catalog, keep_cols = process_gswlc_catalog(
+            catalog_dir=CATALOG_DIR
+        )
+        embeddings = process_embeddings(
+            name="spender-I-vf-0",
+            split=split
+        )
 
-    # save csv of the matched catalog.
-    matched_cat.to_parquet(
-        MATCHED_CAT_FP,
-        index=False
-    )
+        matched_cat = match_catalog_to_embeddings(
+            embeddings=embeddings,
+            catalog=catalog,
+            keep_cols=keep_cols
+        )
+
+        # save csv of the matched catalog.
+        fp = DATA_ROOT + f"/sdss/GSWLC-X2-matched-{split}.parquet"
+        matched_cat.to_parquet(
+            fp,
+            index=False
+        )
+        data_files[split] = fp
 
     # upload to hugging face
-    data_files = {"test": MATCHED_CAT_FP}  # label it correctly
+    # label it correctly
     ds_dict = load_dataset("parquet", data_files=data_files) 
 
     ds_dict.push_to_hub(
         f"{HF_USERNAME}/spectra_catalog",
         private=False,  # optional
-    )'''
-
-    df = merge_matched_cat_with_embeddings()
+    )
 
     

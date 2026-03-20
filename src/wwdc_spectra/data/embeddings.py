@@ -1,43 +1,63 @@
 import os
 
+import numpy as np 
 import lightning as L
 import torch
 from datasets import Dataset as HFDataset
+from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
+from wwdc_spectra.data.cross_match import merge_matched_cat_with_embeddings
 
-class WWDCEmbeddingDataset(Dataset):
-    def __init__(self, embedding_dir, y_catalog):
+class EmbeddingDataset(Dataset):
+    def __init__(
+        self, 
+        embedding_dset_name,
+        catalog_dset_name,
+        split,
+        embed_type, # ["orig", "cond",  "uncond"]
+        params = ["z"] #, 'logM*', "logSFR", "A_v"]
+    ):
         """
         Args:
             embedding_dir (str): The directory containing the embeddings.
         """
-        self.embedding_dir = embedding_dir
-        self.y_catalog = y_catalog
+        
+        dset = merge_matched_cat_with_embeddings(
+            matched_cat=catalog_dset_name,
+            embeddings=embedding_dset_name,
+            key="id",
+            join="left outer",
+            split=split
+        )
+        
+        dset = dset[dset[embed_type].notna()].reset_index(drop=True) # Drop NaN
+        mask = (dset[list(params)] != -99).all(axis=1) # Drop -99 Filler values
+        dset = dset[mask].reset_index(drop=True)
 
-        if not self.data_exists:
-            msg = f"Embedding data not found locally at {self.embedding_dir}."
-            raise ValueError(msg)
+        self.X = np.stack(dset[embed_type].to_numpy())          # shape: (N, D)
+        self.Y = dset[list(params)].to_numpy(dtype=np.float32)  # shape: (N, P)
 
-        self.embedding_dset = HFDataset.load_from_disk(self.embedding_dir)
-
+    '''
+    Add local option later
     @property
     def data_exists(self):
         return os.path.exists(self.embedding_dir)
+    '''
 
     def __len__(self):
-        return len(self.embedding_dset)
+        return len(self.X)
 
     def __getitem__(self, idx):
-        return {k: torch.tensor(v) for k, v in self.embedding_dset[idx].items()}
+        x = torch.from_numpy(self.X[idx]).float()
+        y = torch.from_numpy(self.Y[idx]).float()
+        return x, y
 
-
-class WWDCEmbeddingDataLoader(L.LightningDataModule):
+class EmbeddingDataLoader(L.LightningDataModule):
     def __init__(
         self,
         datasets,
         batch_size=64,
-        val_split=0.2,
         random_state=42,
         shuffle=True,
         num_workers=None,
@@ -45,7 +65,6 @@ class WWDCEmbeddingDataLoader(L.LightningDataModule):
         super().__init__()
         self.datasets = datasets
         self.batch_size = batch_size
-        self.val_split = val_split
         self.random_state = random_state
         if not num_workers:
             num_workers = os.cpu_count() - 1
@@ -82,9 +101,45 @@ class WWDCEmbeddingDataLoader(L.LightningDataModule):
 
 
 if __name__ == "__main__":
-    test_dataset = WWDCEmbeddingDataset(
-        "/data/dtce-schmidt/phys2526/\
-        galaxy10_decals/galaxy10_VAE/embeddings/5287281/test",
-        y_catalog=None,
+    '''
+    dset = EmbeddingDataset(
+        embedding_dset_name="spender-I-vf-0",
+        catalog_dset_name="spectra_catalog",
+        split="train"
     )
-    print(test_dataset[0])
+    print(dset)
+    print(len(dset))
+    '''
+    dset_dict = {
+        "train": EmbeddingDataset(
+            embedding_dset_name="spender-I-vf-0",
+            catalog_dset_name="spectra_catalog",
+            split="train",
+            embed_type="orig"
+        ),
+        "val": EmbeddingDataset(
+            embedding_dset_name="spender-I-vf-0",
+            catalog_dset_name="spectra_catalog",
+            split="val",
+            embed_type="orig"
+        ),
+        "test": EmbeddingDataset(
+            embedding_dset_name="spender-I-vf-0",
+            catalog_dset_name="spectra_catalog",
+            split="test",
+            embed_type="orig"
+        )
+    }
+    dataloader = EmbeddingDataLoader(
+        datasets=dset_dict
+    )
+    print(dataloader)
+    dataloader.setup()
+    df = dataloader.test_dataset.X
+    #print(df.isna())
+
+
+'''# Drop rows where ANY param == -99
+mask = (dset[list(params)] != -99).all(axis=1)
+dset = dset[mask].reset_index(drop=True)
+'''

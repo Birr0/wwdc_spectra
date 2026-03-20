@@ -63,7 +63,7 @@ class WWDCDataLoader(L.LightningDataModule):
         self.val_split = val_split
         self.random_state = random_state
         if not num_workers:
-            self.num_workers = 1  # os.cpu_count() - 1
+            self.num_workers = 1
         else:
             self.num_workers = num_workers
         self.shuffle = shuffle
@@ -86,15 +86,17 @@ class WWDCDataLoader(L.LightningDataModule):
     def setup(self, _stage=None):
         self.train_dataset = self.datasets["train"]
         self.test_dataset = self.datasets["test"]
+        self.val_dataset = self.datasets["val"]            
 
+        '''
         if self.datasets["val"] is not None:
             self.val_dataset = self.datasets["val"]
-
         else:
             if self.val_split > 0.0 and self.val_split < 1.0:
                 self.create_val_split(
                     self.train_dataset
                 )  # creates self.train_dataset, self.val_dataset
+        '''
 
     def base_dataloader(self, dataset, split):
         return DataLoader(
