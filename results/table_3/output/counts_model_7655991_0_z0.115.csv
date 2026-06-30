@@ -1,0 +1,4 @@
+model_no,z_lim,embed_type,s_test_len,z_test_len
+7655991_0,0.115,orig,5534,5534
+7655991_0,0.115,cond,5534,5534
+7655991_0,0.115,uncond,5534,5534
