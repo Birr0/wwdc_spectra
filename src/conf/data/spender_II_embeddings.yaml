@@ -1,0 +1,51 @@
+
+x_ds: # raw data
+  dataset_name: "sdss"
+  fp: ${meta.data_path}
+  type: "spectra"
+  augmentations: none #${..augmentations}
+  size: 3921
+
+y_catalog: # fix to use this catalog at inference time.
+  catalog_name: "sdss"
+  fp: null
+  join_method: null
+  variables:
+    Z:
+      name: "redshift"
+      size: 1
+      processing_fn: null
+  drop_variables: []
+
+embed_type: "orig"
+params: '["z"]'
+
+loader: # need to update this.
+  _target_: wwdc_spectra.data.embeddings.EmbeddingDataLoader
+  datasets:
+    embedding_dset_name: "spender-II-vf-0"
+    train:
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: ${..embedding_dset_name}
+      catalog_dset_name: "spectra_catalog"
+      split: "train"
+      embed_type: ${....embed_type}
+      params:  ${....params}
+    val:
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: ${..embedding_dset_name}
+      catalog_dset_name: "spectra_catalog"
+      split: "val"
+      embed_type: ${....embed_type}
+      params: ${....params}
+    test:
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: ${..embedding_dset_name}
+      catalog_dset_name: "spectra_catalog"
+      split: "test"
+      embed_type: ${....embed_type}
+      params: ${....params}
+  batch_size: 512
+  random_state: ${seed}
+  shuffle: true
+  num_workers: 1 #24 #null  #0 # dynamically set in the python file
