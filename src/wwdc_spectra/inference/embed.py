@@ -65,15 +65,17 @@ def main(cfg):
                         break
                 try:
                     # need to add embed_opt to the config.
-                    X, y, _id, ra, dec, z, mask_ratio = batch
+                    X, y, spec_id, obj_id, ra, dec, z, mask_ratio = batch
                     predictions = lightning_loader.predict_step(
                         X=X, y=y, embed_opt=cfg.embed_opt
                     )
 
                     data = {k: v.tolist() for k, v in predictions.items()}
-
+                    
+                    #data["spectrum"] = X.tolist()
                     # add id
-                    data["id"] = _id
+                    data["id"] = spec_id
+                    data["BESTOBJID"] = obj_id
                     # positional info
                     data["z"] = z.tolist()
                     data["ra"] = ra.tolist()
