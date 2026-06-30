@@ -28,6 +28,11 @@ def main(cfg):
         val_dataloader = data.val_dataloader()
         test_dataloader = data.test_dataloader()
 
+        print("Size of the dataloaders")
+        print(f"Train: {len(train_dataloader)}")
+        print(f"Val: {len(val_dataloader)}")
+        print(f"Test: {len(val_dataloader)}")
+
         log.info("Data loaders initialized.")
     except Exception as e:
         msg = f"Error in instantiating the data loader: {e}."
