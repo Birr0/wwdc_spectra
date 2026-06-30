@@ -38,5 +38,3 @@ for i in range(3):
         state_dict
     )
     model.push_to_hub(f"{HF_USERNAME}/spender-II-vf-{i}")
-
-# could possibly clean this up using config loaders.
