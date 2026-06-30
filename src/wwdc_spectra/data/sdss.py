@@ -21,7 +21,8 @@ class SDSS(Dataset):
         y_catalog=None, 
         return_id=False, 
         return_pos=False,
-        return_mask_ratio=False
+        return_mask_ratio=False,
+        return_mask=False
     ):
         if not self.data_exists(): # this needs replaced.
             if not self.raw_data_exists():
@@ -71,6 +72,7 @@ class SDSS(Dataset):
         self.return_id = return_id  
         self.return_pos = return_pos
         self.return_mask_ratio = return_mask_ratio
+        self.return_mask = return_mask
     
     @staticmethod
     def raw_data_exists():
@@ -223,10 +225,11 @@ class SDSS(Dataset):
 
         out = [spec, y]
         if self.return_id:
-            #objid = item.get("BESTOBJID")
+            objid = item.get("BESTOBJID")
             specid = item.get("object_id")
             out.append(specid if specid is not None else "")
-
+            out.append(objid if objid is not None else "")
+            
         if self.return_pos:
             ra = item.get("ra"); dec = item.get("dec"); z = item.get("Z")
             out.extend([
@@ -239,6 +242,9 @@ class SDSS(Dataset):
             out.append(
                 (w == 0).sum()/len(w)
             )
+        
+        if self.return_mask:
+            out.append(w)
 
         return tuple(out)
 
