@@ -37,23 +37,29 @@ loader:
   batch_size: 512
   random_state: ${seed}
   shuffle: true
-  num_workers: 24 #0 # dynamically set in the python file
+  num_workers: 24 #1 #0 # dynamically set in the python file
 
 embedding_loader: # need to update this.
-  _target_: wwdc_spectra.data.embeddings.WWDCEmbeddingDataLoader
+  _target_: wwdc_spectra.data.embeddings.EmbeddingDataLoader
   datasets:
     train:
-      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
-      embedding_dir: ${paths.embed_fp}/train
-      y_catalog: ${....y_catalog}
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: "spender-I-vf-0"
+      catalog_dset_name: "spectra_catalog"
+      split: "train"
+      embed_type: "orig"
     val:
-      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
-      embedding_dir: ${paths.embed_fp}/val
-      y_catalog: ${....y_catalog}
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: "spender-I-vf-0"
+      catalog_dset_name: "spectra_catalog"
+      split: "val"
+      embed_type: "orig"
     test:
-      _target_: wwdc_spectra.data.embeddings.Galaxy10FM #WWDCEmbeddingDataset
-      embedding_dir: ${paths.embed_fp}/test
-      y_catalog: ${....y_catalog}
+      _target_: wwdc_spectra.data.embeddings.EmbeddingDataset
+      embedding_dset_name: "spender-I-vf-0"
+      catalog_dset_name: "spectra_catalog"
+      split: "test"
+      embed_type: "orig"
   batch_size: 16 #64
   val_split: 0.2
   random_state: ${seed}
