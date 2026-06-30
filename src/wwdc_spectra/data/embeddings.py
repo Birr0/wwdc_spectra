@@ -12,7 +12,7 @@ from astroML.datasets import fetch_sdss_specgals
 from natsort import natsorted
 from dotenv import load_dotenv 
 
-from wwdc_spectra.data.cross_match import merge_matched_cat_with_embeddings
+from wwdc_spectra.data.gswlc.cross_match import merge_matched_cat_with_embeddings
 
 load_dotenv()
 HF_USERNAME = os.getenv("HF_USERNAME")
