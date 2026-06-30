@@ -15,9 +15,9 @@ lightning_loader:
   ckpt_path: null # let the code populate this.
 
 splits:
+  - train
   - test
-  # - train
-  # - val
+  - val
 
 embed_opt:
   - "orig"
@@ -32,15 +32,22 @@ logger:
   wandb:
     mode: offline
 
+data:
+  loader:
+    shuffle: False
+
 hydra:
   sweeper:
     params:
       ++data.y_catalog.drop_variables: ${....sweeps.drop_variables.0} #${....sweeps.drop_variables.0}, ${....sweeps.drop_variables.1} #, ${....sweeps.drop_variables.2}, ${....sweeps.drop_variables.3}, ${....sweeps.drop_variables.4}, ${....sweeps.drop_variables.5}, ${....sweeps.drop_variables.6}, ${....sweeps.drop_variables.7}, ${....sweeps.drop_variables.8} #, ${....sweeps.drop_variables.9}, ${....sweeps.drop_variables.10}, ${....sweeps.drop_variables.11}, ${....sweeps.drop_variables.12}, ${....sweeps.drop_variables.13}, ${....sweeps.drop_variables.14}
       +seed: ${....sweeps.seeds.0}, ${....sweeps.seeds.1}, ${....sweeps.seeds.2}
-      +data.loader.datasets.train.return_id: True
-      +data.loader.datasets.val.return_id: True
-      +data.loader.datasets.test.return_id: True
-      +data.loader.datasets.train.return_pos: True
-      +data.loader.datasets.val.return_pos: True
-      +data.loader.datasets.test.return_pos: True
+      +data.loader.datasets.test.return_id: true      
+      +data.loader.datasets.test.return_pos: true
+      +data.loader.datasets.test.return_mask_ratio: true
+      +data.loader.datasets.val.return_id: true      
+      +data.loader.datasets.val.return_pos: true
+      +data.loader.datasets.val.return_mask_ratio: true
+      +data.loader.datasets.train.return_id: true      
+      +data.loader.datasets.train.return_pos: true
+      +data.loader.datasets.train.return_mask_ratio: true
       +lightning_loader.n_steps: 20
