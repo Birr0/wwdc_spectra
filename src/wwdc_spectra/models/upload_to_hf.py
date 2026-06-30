@@ -17,7 +17,6 @@ data_root = os.getenv("DATA_ROOT")
 HF_USERNAME = os.getnev("HF_USERNAME")
 
 
-
 def ckpt_path(experiment_name, model_name):
     return f"{data_root}/{data_name}/{experiment_name}/ckpts/{model_name}"
 
