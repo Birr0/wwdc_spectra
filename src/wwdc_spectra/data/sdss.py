@@ -22,7 +22,9 @@ class SDSS(Dataset):
         return_id=False, 
         return_pos=False,
         return_mask_ratio=False,
-        return_mask=False
+        return_mask=False,
+        normalisation_cache=None,
+        normalisation_workers=8,
     ):
         if not self.data_exists(): # this needs replaced.
             if not self.raw_data_exists():
@@ -73,6 +75,10 @@ class SDSS(Dataset):
         self.return_pos = return_pos
         self.return_mask_ratio = return_mask_ratio
         self.return_mask = return_mask
+        active_variables = set(self.y_catalog["variables"]) - set(self.y_catalog["drop_variables"]) if self.y_catalog else set()
+        if "NORM" in active_variables:
+            from wwdc_spectra.data.normalisation import configure_normalisation
+            configure_normalisation(self, split, normalisation_cache, normalisation_workers)
     
     @staticmethod
     def raw_data_exists():
@@ -193,6 +199,13 @@ class SDSS(Dataset):
 
         return spec, w, norm, wave_rest, z
 
+    def normalisation_condition(self, norm):
+        """Use the actual preprocessing factor, with training-only log scaling."""
+        norm = torch.as_tensor(norm, dtype=torch.float32)
+        if not torch.isfinite(norm) or norm <= 0:
+            raise ValueError("NORM conditioning requires a finite positive preprocessing factor")
+        return (norm.log10() - self.normalisation_stats["mean"]) / self.normalisation_stats["std"]
+
     @staticmethod
     def _to_f32_or_nan(x):
         return torch.tensor(
@@ -206,7 +219,7 @@ class SDSS(Dataset):
         item = self.dataset[idx]
 
         # pre-process spectrum
-        spec, w, _, wave_rest, z = self.prepare_spectrum(
+        spec, w, norm, wave_rest, z = self.prepare_spectrum(
             flux=item["spectrum"]["flux"],
             ivar=item["spectrum"]["ivar"],
             wavelengths=item["spectrum"]["lambda"],
@@ -217,7 +230,7 @@ class SDSS(Dataset):
         # Pre-process conditioning data
         y = torch.stack(
             [
-                torch.as_tensor(item[k])
+                self.normalisation_condition(norm) if k == "NORM" else torch.as_tensor(item[k])
                 for k in self.y_catalog["variables"]
                 if k not in self.y_catalog["drop_variables"]
             ]

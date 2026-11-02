@@ -1,0 +1,185 @@
+{
+  "date": "2026-11-02",
+  "unit_tests_passed": 7,
+  "training_smoke": {
+    "norm": {
+      "status": "passed",
+      "seed": 42,
+      "test": [
+        {
+          "test_loss": 1.0074996948242188
+        }
+      ],
+      "smoke": true,
+      "epochs": 1,
+      "batches_per_split": 1,
+      "norm_stats": {
+        "mean": 1.1450679857900785,
+        "std": 0.27985617596867324,
+        "transform": "standardised log10",
+        "fit_split": "train",
+        "parent_rows": 422481,
+        "retained_rows": 411742,
+        "excluded_rows": 10739,
+        "cache": "/home/birr0/local_data/sdss/normalisation_cache/e15d9586ef33858629a065073510488f4a1e7af26d02a0898ba9994d02a06e6e.npy",
+        "training_cache": "/home/birr0/local_data/sdss/normalisation_cache/e15d9586ef33858629a065073510488f4a1e7af26d02a0898ba9994d02a06e6e.npy"
+      }
+    },
+    "redshift": {
+      "status": "passed",
+      "seed": 42,
+      "test": [
+        {
+          "test_loss": 1.0065805912017822
+        }
+      ],
+      "smoke": true,
+      "epochs": 1,
+      "batches_per_split": 1,
+      "norm_stats": null
+    }
+  },
+  "inference": [
+    {
+      "arm": "redshift",
+      "split": "train",
+      "rows": 32,
+      "mask_eligible_rows": 29,
+      "max_abs_errors_all_rows": {
+        "orig": 0.00369417667388916,
+        "cond": 0.016152501106262207,
+        "uncond": 0.013461709022521973
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 1.0076910257339478e-06,
+        "cond": 1.4960765838623047e-05,
+        "uncond": 1.5854835510253906e-05
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    },
+    {
+      "arm": "redshift",
+      "split": "val",
+      "rows": 32,
+      "mask_eligible_rows": 30,
+      "max_abs_errors_all_rows": {
+        "orig": 0.00369417667388916,
+        "cond": 0.01709461212158203,
+        "uncond": 0.013461709022521973
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 1.1473894119262695e-06,
+        "cond": 1.5139579772949219e-05,
+        "uncond": 1.5556812286376953e-05
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    },
+    {
+      "arm": "redshift",
+      "split": "test",
+      "rows": 32,
+      "mask_eligible_rows": 31,
+      "max_abs_errors_all_rows": {
+        "orig": 9.872019290924072e-07,
+        "cond": 1.8835067749023438e-05,
+        "uncond": 1.4185905456542969e-05
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 9.872019290924072e-07,
+        "cond": 1.8835067749023438e-05,
+        "uncond": 1.4185905456542969e-05
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    },
+    {
+      "arm": "norm",
+      "split": "train",
+      "rows": 32,
+      "mask_eligible_rows": 30,
+      "max_abs_errors_all_rows": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 2.384185791015625e-07
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 2.384185791015625e-07
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    },
+    {
+      "arm": "norm",
+      "split": "val",
+      "rows": 32,
+      "mask_eligible_rows": 31,
+      "max_abs_errors_all_rows": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 4.76837158203125e-07
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 4.76837158203125e-07
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    },
+    {
+      "arm": "norm",
+      "split": "test",
+      "rows": 32,
+      "mask_eligible_rows": 31,
+      "max_abs_errors_all_rows": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 1.7881393432617188e-07
+      },
+      "max_abs_errors_mask_eligible": {
+        "orig": 0.0,
+        "cond": 0.0,
+        "uncond": 1.7881393432617188e-07
+      },
+      "tolerance": {
+        "orig": 2e-06,
+        "cond": 2e-05,
+        "uncond": 2e-05
+      },
+      "passed_mask_eligible": true
+    }
+  ],
+  "uv_bootstrap_verified": false,
+  "full_training_rerun": false,
+  "full_dataset_inference_rerun": false,
+  "execution": "Existing locked script environment used directly because the sandbox blocks uv cache writes; CPU, real archived spectra.",
+  "limitations": [
+    "Redshift train/val include two fully masked rows with larger differences; all rows passing the pre-existing mask_ratio<=0.5 cut meet historical tolerances.",
+    "Observed source plus archived configurations do not establish exact historical training source.",
+    "No HF upload or fresh remote download completed."
+  ]
+}

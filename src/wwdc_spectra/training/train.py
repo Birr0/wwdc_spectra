@@ -31,7 +31,7 @@ def main(cfg):
         print("Size of the dataloaders")
         print(f"Train: {len(train_dataloader)}")
         print(f"Val: {len(val_dataloader)}")
-        print(f"Test: {len(val_dataloader)}")
+        print(f"Test: {len(test_dataloader)}")
 
         log.info("Data loaders initialized.")
     except Exception as e:
@@ -67,8 +67,17 @@ def main(cfg):
     try:
         if "run_id" in cfg:
             OmegaConf.update(cfg, "logger.wandb.id", f"{cfg.run_id}")
-        wandb = hydra.utils.instantiate(cfg.logger.wandb)
+        from lightning.pytorch.loggers import WandbLogger
+        wandb = next(logger for logger in trainer.loggers if isinstance(logger, WandbLogger))
+        normalisation = {
+            split: dataset.normalisation_stats
+            for split, dataset in data.datasets.items()
+            if hasattr(dataset, "normalisation_stats")
+        }
+        if normalisation:
+            OmegaConf.update(cfg, "normalisation", normalisation, force_add=True)
         if "run_id" in cfg:
+            wandb._wandb_init["id"] = str(cfg.run_id)
             wandb._wandb_init["resume"] = "must"
         wandb.log_hyperparams(cfg)
         log.info("Wandb logger initialized.")
@@ -107,7 +116,7 @@ def main(cfg):
 
     try:
         job_id = HydraConfig.get().job.id
-        track_weights(cfg, job_id)
+        track_weights(cfg, cfg.logger.wandb.id)
         log.info("Weights tracking on local machine completed.")
     except Exception as e:
         msg = f"Failed to track the weights for job: {HydraConfig.get().job.id}. \

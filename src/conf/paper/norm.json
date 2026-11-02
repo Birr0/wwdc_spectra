@@ -1,0 +1,45 @@
+{
+  "arm": "norm",
+  "source_config": "sdss_II/spender_I_normalisation_flow/ckpts/norm_20261012183217_0.yaml",
+  "source_config_sha256": "b854d40430da0ab5e807bc0a860f457581809a65cb8512b880962fecabfbb716",
+  "seed": 42,
+  "variables": {
+    "NORM": {
+      "name": "standardised_log10_spectral_normalisation",
+      "size": 1,
+      "processing_fn": null
+    }
+  },
+  "code_dim": 10,
+  "hidden_dim": 1024,
+  "n_layers": 3,
+  "lr": 0.0001,
+  "batch_size": 512,
+  "num_workers": 8,
+  "trainer": {
+    "_target_": "lightning.pytorch.trainer.Trainer",
+    "min_epochs": 1,
+    "max_epochs": 100,
+    "accelerator": "gpu",
+    "devices": 1,
+    "precision": "16-mixed",
+    "check_val_every_n_epoch": 1,
+    "deterministic": "warn",
+    "gradient_clip_val": 1.0,
+    "gradient_clip_algorithm": "norm",
+    "log_every_n_steps": 50
+  },
+  "early_stopping": {
+    "monitor": "val_loss",
+    "patience": 10,
+    "min_delta": 0.0001,
+    "mode": "min"
+  },
+  "normalisation_reference": {
+    "mean": 1.1450679857900785,
+    "std": 0.27985617596867324,
+    "parent_rows": 422481,
+    "retained_rows": 411742,
+    "excluded_rows": 10739
+  }
+}

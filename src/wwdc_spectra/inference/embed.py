@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import torch
 import hydra
 from hydra.core.global_hydra import GlobalHydra
 from lightning.pytorch import seed_everything
@@ -58,75 +59,70 @@ def main(cfg):
         raise e
 
     for name, split in split_dataloaders.items():
-        if split["call"]:
+        if not split["call"]:
+            continue
+
+        path = Path(cfg.paths.embed_dir) / str(model_id) / name
+        path.mkdir(parents=True, exist_ok=True)
+
+        writer = None
+
+        try:
             for idx, batch in enumerate(split["dataloader"]):
-                if (cfg.batch_limit is not None):
-                    if idx >= cfg.batch_limit:
-                        break
-                try:
-                    # need to add embed_opt to the config.
-                    X, y, spec_id, obj_id, ra, dec, z, mask_ratio = batch
+                if cfg.batch_limit is not None and idx >= cfg.batch_limit:
+                    break
+
+                X, y, spec_id, obj_id, ra, dec, z, mask_ratio = batch
+
+                with torch.inference_mode():
                     predictions = lightning_loader.predict_step(
-                        X=X, y=y, embed_opt=cfg.embed_opt
+                        X=X,
+                        y=y,
+                        embed_opt=cfg.embed_opt,
                     )
 
-                    data = {k: v.tolist() for k, v in predictions.items()}
-                    
-                    #data["spectrum"] = X.tolist()
-                    # add id
-                    data["id"] = spec_id
-                    data["BESTOBJID"] = obj_id
-                    # positional info
-                    data["z"] = z.tolist()
-                    data["ra"] = ra.tolist()
-                    data["dec"] = dec.tolist()
-                    data["mask_ratio"] = mask_ratio.tolist()
+                data = {
+                    k: v.detach().cpu().tolist()
+                    for k, v in predictions.items()
+                }
 
-                    path = Path(cfg.paths.embed_dir + f"{model_id}/{name}/")
-                    if not path.exists():
-                        path.mkdir(parents=True, exist_ok=True)
-
-                    pq.write_table(pa.table(data), path / f"{idx}.parquet")
-
-                except Exception as e:
-                    msg = f"Error creating embeddings: {e}"
-                    log.error(msg)
-                    raise e
-
-            '''
-            try:
-                cfg.logger.wandb.tags.append(str(model_id))
-                cfg.logger.wandb.id = model_id
-                cfg.logger.wandb.name = f"{model_id}_{cfg.meta.experiment_name}"
-                # wandb_logger = hydra.utils.instantiate(cfg.logger.wandb)
-                msg = "Wandb logger instantiated."
-                log.info(msg)
-
-            except Exception as e:
-                msg = f"Error instantiating wandb logger: {e}"
-                log.error(msg)
-                raise e
-            
-            
-            try:
-                print(f"wandb_logger: {wandb_logger}")
-                print(
-                    f"wandb_logger._wandb_init['mode']:\
-                        {wandb_logger._wandb_init['mode']}"
+                data["id"] = (
+                    spec_id.detach().cpu().numpy()
+                    if hasattr(spec_id, "detach")
+                    else spec_id
                 )
-                if wandb_logger._wandb_init["mode"] == "online":
-                    wandb_logger.log_table(
-                        key=f"{model_id}_{name}_embeddings",
-                        dataframe=wandb_format(embeddings, cfg.data.x_ds),
+                data["BESTOBJID"] = (
+                    obj_id.detach().cpu().numpy()
+                    if hasattr(obj_id, "detach")
+                    else obj_id
+                )
+
+                # conditioning values as fed to the flow (e.g. standardised NORM)
+                data["y"] = y.detach().cpu().tolist()
+                data["z"] = z.detach().cpu().numpy()
+                data["ra"] = ra.detach().cpu().numpy()
+                data["dec"] = dec.detach().cpu().numpy()
+                data["mask_ratio"] = mask_ratio.detach().cpu().numpy()
+
+                table = pa.table(data)
+
+                if writer is None:
+                    writer = pq.ParquetWriter(
+                        path / "embeddings.parquet",
+                        table.schema,
+                        compression="zstd",
                     )
-                    print("Logged embeddings to wandb.")
-                    msg = "Logged embeddings to wandb."
-                    log.info(msg)
-            except Exception as e:
-                msg = f"Error logging embeddings to wandb: {e}"
-                log.error(msg)
-                raise e
-            '''
+
+                writer.write_table(table)
+
+        except Exception as e:
+            msg = f"Error creating embeddings for split {name}: {e}"
+            log.error(msg)
+            raise
+
+        finally:
+            if writer is not None:
+                writer.close()
 
     log.info("Inference complete.")
     return

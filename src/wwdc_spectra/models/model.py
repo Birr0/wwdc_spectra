@@ -170,7 +170,7 @@ class AdaLN(nn.Module):
         return self.linear(x), gate # return gating mechanism
 
 class VelocityField(nn.Module, PyTorchModelHubMixin):
-    def __init__(self, code_dim, hidden_dim, conditional_dim, n_hidden=3):
+    def __init__(self, code_dim, hidden_dim, conditional_dim, n_layers):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.time_dim = 1
@@ -180,10 +180,10 @@ class VelocityField(nn.Module, PyTorchModelHubMixin):
 
         self.act = nn.SiLU()
         self.ada_lns = nn.ModuleList(
-            [AdaLN(hidden_dim, hidden_dim) for _ in range(n_hidden)]
+            [AdaLN(hidden_dim, hidden_dim) for _ in range(n_layers)]
         )
         self.linears = nn.ModuleList(
-            [nn.Linear(hidden_dim, hidden_dim) for _ in range(n_hidden)]
+            [nn.Linear(hidden_dim, hidden_dim) for _ in range(n_layers)]
         )
         self.out_proj = nn.Linear(hidden_dim, code_dim) 
 
@@ -221,6 +221,7 @@ class LightningFlowMatching(L.LightningModule):
         hidden_dim,
         catalog,
         n_steps=10,
+        n_layers=3,
         ckpt_path: str = None,
         method="midpoint"
     ):
@@ -233,7 +234,12 @@ class LightningFlowMatching(L.LightningModule):
         self.lr = lr
 
         # --- Models --- #
-        self.vf = VelocityField(code_dim, hidden_dim, get_conditional_len(catalog))
+        self.vf = VelocityField(
+            code_dim,
+            hidden_dim,
+            get_conditional_len(catalog),
+            n_layers
+        )
         self.vf.apply(self._init_weights)
         self.base_model = base_model
 
@@ -241,7 +247,7 @@ class LightningFlowMatching(L.LightningModule):
         if ckpt_path:
             self.vf_state_dict = torch.load(ckpt_path)[
                 "state_dict"
-            ]  # map_location="cpu"
+            ]
             self.load_state_dict(self.vf_state_dict, strict=False)
             print("✅ Loaded state dict from checkpoint.")
             self.wrapped_vf = WrappedModel(self.vf)
@@ -307,6 +313,11 @@ class LightningFlowMatching(L.LightningModule):
         self.log(f"{partition}_loss", loss)
         return loss
 
+    def on_train_start(self):
+        total_params = sum(p.numel() for p in self.vf.parameters())
+        self.log("vf_total_params", total_params)
+        print(f"\nModel Parameter Count: {total_params:,}")
+
     def training_step(self, batch, _batch_idx):
         return self.base_step(batch, "train")
 
@@ -324,8 +335,6 @@ class LightningFlowMatching(L.LightningModule):
             if "orig" in embed_opt:
                 output["orig"] = code
             
-            
-            # could reduce this to a single forward pass.
             if "cond" in embed_opt:
                 output["cond"] = self.solver.sample(
                     x_init=code,

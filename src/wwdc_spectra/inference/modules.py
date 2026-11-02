@@ -76,9 +76,13 @@ def create_lightning_loader(cfg):
     job_ids = []
     job_nums = []
 
+    # last.ckpt (save_last) is a duplicate of a numbered checkpoint, not a job.
+    ckpt_files = [f for f in ckpt_files if f.stem != "last"]
+
     for ckpt_file in ckpt_files:
         if len(ckpt_file.stem.split("_")) > 1:
-            job_id, job_num = ckpt_file.stem.split("_")
+            # rsplit so run-tagged stems like norm_20261012183217_0 parse too.
+            job_id, job_num = ckpt_file.stem.rsplit("_", 1)
 
         else:
             job_id = ckpt_file.stem

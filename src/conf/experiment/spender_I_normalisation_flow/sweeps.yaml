@@ -1,0 +1,7 @@
+sweeps:
+  drop_variables:
+    - '[]'
+  seeds:
+    - 42
+    - 43
+    - 44

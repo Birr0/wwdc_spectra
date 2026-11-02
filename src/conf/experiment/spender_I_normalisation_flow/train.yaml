@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+- /data/sdss_normalisation
+- /trainer/gpu
+- /logger/wandb
+- /logger/csv
+- /paths/default
+- /hydra/default
+- model
+- sweeps
+- meta
+- _self_
+
+hydra:
+  sweeper:
+    params:
+      ++data.y_catalog.drop_variables: ${....sweeps.drop_variables.0}
+      +seed: ${....sweeps.seeds.0}
+
+trainer:
+  max_epochs: 100
+  log_every_n_steps: 50
+
+# Unique run/checkpoint IDs also when using Hydra's local basic launcher.
+run_tag: ${now:%Y%m%d_%H%M%S}
+logger:
+  wandb:
+    id: norm_${run_tag}_${hydra:job.num}
+    name: norm_seed${seed}_${run_tag}
+    tags: [normalisation_only, "seed${seed}"]
+model_checkpoint:
+  filename: norm_${run_tag}_${hydra:job.num}
+  save_last: true

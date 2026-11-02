@@ -1,0 +1,19 @@
+name: Paper recipes
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check paper command and archived recipe contract
+        run: |
+          python paper.py --help
+          python tests/test_paper.py PaperTests.test_recipes_match_archived_architecture_and_condition PaperTests.test_missing_saved_splits_never_falls_back_to_download -v

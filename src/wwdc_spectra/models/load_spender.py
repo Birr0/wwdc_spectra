@@ -821,7 +821,7 @@ class PretrainedSpender(nn.Module):
     # for full pre-training.
     def __init__(self, model, latent_dim):
         super().__init__()
-        _, self.model = spender.hub.load(model)
+        _, self.model = spender.hub.load(model, map_location="cpu")
         self.latent_dim = latent_dim
         self.model.eval()
         for p in self.model.parameters():
